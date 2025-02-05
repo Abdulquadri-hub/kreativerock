@@ -1,0 +1,26 @@
+[Wed 31-07-2024 05:48:34 AM UTC] Error: Unknown column 'firstname' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 05:48:41 AM UTC] Error: Unknown column 'firstname' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 06:35:35 AM UTC] Error: Unknown column 'firstname' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 07:04:12 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 07:04:22 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 08:10:45 AM UTC] Error: Unknown column 'voting_details.organiser_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 08:12:59 AM UTC] Error: Unknown column 'voting_details.organiser_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:17:43 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:17:45 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:17:47 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:17:48 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:17:51 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:24:15 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:26:10 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:26:12 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:26:14 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:29:29 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:30:17 AM UTC] Error: Unknown column 'organisers_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:47:53 AM UTC] Error: Unknown column 'last' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:48:01 AM UTC] Error: Unknown column 'last' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 11:48:09 AM UTC] Error: Unknown column 'last' in 'field list' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 12:31:32 PM UTC] Error: Unknown column 'voting_details_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 12:34:35 PM UTC] Error: Unknown column 'voting_details_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Wed 31-07-2024 12:40:33 PM UTC] Error: Unknown column 'voting_details_id' in 'where clause' at /home/nglohitech/public_html/elfrique/model/elfriquesandboxclasses.php on line 15 
+[Thu 15-08-2024 02:36:03 PM WAT] Error: Email verifivation: 6154971514 at  on line  
+[Sun 12-01-2025 04:28:06 PM WAT] Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'Y-m-d H:i:s') . ')' at line 1 at /home2/comeands/public_html/kreativerock/model/user.php on line 124 

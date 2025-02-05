@@ -1,0 +1,1 @@
+[06-Oct-2024 15:35:41 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/comeands/public_html/kreativerock/model/dbFunctions.php:21) in /home2/comeands/public_html/kreativerock/model/ExternalSmsApi.php on line 163
