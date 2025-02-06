@@ -12,7 +12,7 @@ class SmsCampaign {
     private $campaignMessagesTable = 'campaign_messages';
     private $keywordResponsesTable = 'keyword_responses';
     private $promptsResponsesTable = 'prompts_responses';
-    private $rcsUsersTable = 'rcs_users';
+    private $contactsTable = 'contacts';
     private $conversationsTable = 'conversations';
     private $usersTable = 'users';
     public $errors = [];
@@ -33,58 +33,61 @@ class SmsCampaign {
         if (!$user) {
             return ['status' => false, 'message' => 'User not found'];
         }
- 
-        $phoneNumbers = is_array($params['contacts']) ? $params['contacts'] : [$params['contacts']];
-        
-        foreach ($phoneNumbers as $number) {
-            $rcsCapable = $this->smsIntegration->checkRcsCapability($number);
-            // Store RCS capability info if needed
-        }
-        
-        $campaignData = [
-            'user_id' => $user['id'],
-            'name' => $params['campaignname'],
-            'type' => $params['campaigntype'],
-            'message' => $params['campaignmessage'],
-            'phone_numbers' => json_encode($phoneNumbers),
-            'sms_pages' => $params['smspages'],
-            'status' => 'draft',
-            'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
-            'repeat_interval' => $params['repeatcampaign'],
-            'response_handling' => $params['responseHandling'] ?? 'manual'
+
+        $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
+
+        return [
+            'status' => true,
+            'message' => 'Campaign created successfully',
+            'data' => $contacts
         ];
-        
-        try {
-            $this->db->beginTransaction();
-            
-            $existingCampaign = $this->db->find($this->campaignTable, 
-                "user_id = '{$user['id']}' AND status = 'draft'"
-            );
-            
-            if ($existingCampaign) {
-                $campaignId = $existingCampaign['id'];
-                $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
-            } else {
-                $campaignId = $this->db->insert($this->campaignTable, $campaignData);
-            }
 
-            $this->db->commitTransaction();
-
-            if ($params['scheduled'] === 'NOW') {
-                return $this->sendCampaign($campaignId, $email);
-            }
-            
-            return [
-                'status' => true,
-                'message' => 'Campaign created successfully',
-                'campaign_id' => $campaignId
-            ];
-
-        } catch (Exception $e) {
-            $this->db->rollbackTransaction();
-            error_log($e->getMessage());
-            return ['status' => false, 'message' => 'Error creating campaign: ' . $e->getMessage()];
+        if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automatic"){
+            //handle campaign prompts 
         }
+
+        // $phoneNumbers = is_array($params['contacts']) ? $params['contacts'] : [$params['contacts']];
+        
+        // foreach ($phoneNumbers as $number) {
+        //     $rcsCapable = $this->smsIntegration->checkRcsCapability($number);
+        //     // Store RCS capability info if needed
+        // }
+        
+        // $campaignData = [
+        //     'user_id' => $user['id'],
+        //     'name' => $params['campaignname'],
+        //     'type' => $params['campaigntype'],
+        //     'message' => $params['campaignmessage'],
+        //     'phone_numbers' => json_encode($phoneNumbers),
+        //     'sms_pages' => $params['smspages'],
+        //     'status' => 'draft',
+        //     'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
+        //     'repeat_interval' => $params['repeatcampaign'],
+        //     'response_handling' => $params['responseHandling'] ?? 'manual'
+        // ];
+        
+            
+        // $existingCampaign = $this->db->find($this->campaignTable, 
+        //     "user_id = '{$user['id']}' AND status = 'draft'"
+        // );
+        
+        // if ($existingCampaign) {
+        //     $campaignId = $existingCampaign['id'];
+        //     $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
+        // } else {
+        //     $campaignId = $this->db->insert($this->campaignTable, $campaignData);
+        // }
+
+        // if ($params['scheduled'] === 'NOW') {
+        //     return $this->sendCampaign($campaignId, $email);
+        // }
+
+        // return [
+        //     'status' => true,
+        //     'message' => 'Campaign created successfully',
+        //     'campaign_id' => $campaignId
+        // ];
+        
     }
     
     public function getCampaign($request) {
@@ -183,6 +186,14 @@ class SmsCampaign {
     private function validateParams($params) {
         $this->errors = [];
         
+        if (empty($params['segment_id'])) {
+            $this->errors['segment_id'] = 'Segment id is required';
+        }
+
+        if (empty($params['channel'])) {
+            $this->errors['channel'] = 'Channel is required';
+        }
+
         if (empty($params['campaignname'])) {
             $this->errors['campaignname'] = 'Campaign name is required';
         }
@@ -192,13 +203,23 @@ class SmsCampaign {
         } elseif (strlen($params['campaignmessage']) > 160) {
             $this->errors['campaignmessage'] = 'Message cannot exceed 160 characters';
         }
-        
-        if (empty($params['contacts'])) {
-            $this->errors['contacts'] = 'Contacts are required';
-        }
-        
+
         if (empty($params['campaigntype'])) {
             $this->errors['campaigntype'] = 'Campaign type is required';
+        }
+
+        if ($params['campaigntype'] === "promotional") {
+            if(!isset($params['responsehandling']) || empty($params['responsehandling'])){
+                $this->errors['responsehandling'] = 'Response Handling for the campaign type is required';
+            }
+            else {
+                $allowedResponseHandling = ['automated', 'manual'];
+                if (in_array($params['responsehandling'], $allowedResponseHandling)) {
+                    $sanitizedData['responsehandling'] = $params['responsehandling'];
+                } else {
+                    $this->errors['responsehandling'] = "Invalid response handling.";
+                }
+            }
         }
         
         if ($params['scheduled'] !== 'NOW' && empty($params['scheduledDate'])) {
@@ -226,22 +247,23 @@ class SmsCampaign {
         
         $responses = [];
         foreach ($results as $phoneNumber => $result) {
-            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign['message'], $result);
+            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign, $result);
             
             if ($messageId) {
-                $this->db->insert($this->campaignMessagesTable, [
-                    'campaign_id' => $campaignId,
-                    'message_id' => $messageId,
-                    'position' => 'first'
-                ]);
+                $responses[] = [
+                    'phone' => $phoneNumber,
+                    'status' => $result->isSuccess() ? 'sent' : 'failed',
+                    'message_id' => $result->getMessageId(),
+                    'error' => $result->isSuccess() ? null : $result->getMessage()
+                ];
+            }
+            else{
+                $responses[] = [
+                    'status' => $result->isSuccess() ? 'sent' : 'failed',
+                    'error' => $result->isSuccess() ? null : $result->getMessage()
+                ];
             }
             
-            $responses[] = [
-                'phone' => $phoneNumber,
-                'status' => $result->isSuccess() ? 'sent' : 'failed',
-                'message_id' => $result->getMessageId(),
-                'error' => $result->isSuccess() ? null : $result->getMessage()
-            ];
         }
         
         $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '$campaignId'");
@@ -317,13 +339,14 @@ class SmsCampaign {
         }
     }
     
-    private function saveMessage($userId, $phoneNumber, $message, $result) {
+    private function saveMessage($userId, $phoneNumber, $campaign, $result) {
         return $this->db->insert($this->messagesTable, [
             'user_id' => $userId,
+            'campaign_id' => $campaign['id'] ?? null,
             'destinations' => json_encode($phoneNumber),
             'message_type' => 'text',
             'direction' => 'outgoing',
-            'content' => $message,
+            'content' =>  $campaign['message'],
             'interaction_type' => 'prompt',
             'rcs_message_id' => $result->getMessageId(),
             'error' => $result->isSuccess() ? null : $result->getMessage()

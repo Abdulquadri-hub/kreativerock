@@ -29,34 +29,20 @@ $email = $_SESSION["elfuseremail"] ??  null;
 if (json_last_error() !== JSON_ERROR_NONE) {
     exit(badRequest(204,'Invalid JSON data'));
 }
+$result = $smsCampaign->createCampaign($campaignParams, $email); 
 
-try {
-    
-    $result = $smsCampaign->createCampaign($campaignParams, $email); 
+if (isset($result['status']) && $result['status']) {
+    echo json_encode([
+        'status' => true,
+        'message' => $result['message'],
+        'data' => $result['data'] ?? null,
+        'campaign_id' => $result['campaign_id'] ?? null
+    ]);
+} else {
         
-    if ($result['status']) {
-
-        echo json_encode([
-            'status' => true,
-            'message' => $result['message'],
-            'data' => $result['data'] ?? null,
-            'campaign_id' => $result['campaign_id'] ?? null
-        ]);
-    } else {
-            
-        echo json_encode([
-            'status' => false,
-            'message' => $result['message'],
-            'errors' => $result['errors'] ?? null
-        ]);
-    }
-        
-
-} catch (Exception $e) {
     echo json_encode([
         'status' => false,
-        'message' => 'An error occurred while processing the campaign',
-        'error' => $e->getMessage()
+        'message' =>"An error occurs when creating campaign",
+        'errors' => $result['errors'] ?? null
     ]);
 }
-    
