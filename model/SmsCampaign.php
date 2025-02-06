@@ -28,14 +28,12 @@ class SmsCampaign {
         if (!$this->validateParams($params)) {
             return ['status' => false, 'message' => 'Missing required fields', 'errors' => $this->errors];
         }
-        
        
         $user = $this->db->find($this->usersTable, "email = '$email'");
         if (!$user) {
             return ['status' => false, 'message' => 'User not found'];
         }
-
-        
+ 
         $phoneNumbers = is_array($params['contacts']) ? $params['contacts'] : [$params['contacts']];
         
         foreach ($phoneNumbers as $number) {

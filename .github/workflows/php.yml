@@ -24,3 +24,6 @@ jobs:
             **/node_modules/**
             README.md
             .env
+            model/dbclass.php
+            admin/.htaccess
+            .htaccess
