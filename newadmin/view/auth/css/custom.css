@@ -1,7 +1,0 @@
-    .control-error {
-        font-size: 11px;
-        color: tomato;
-    }
-    .control-error::first-letter {
-        text-transform: capitalize;
-    }

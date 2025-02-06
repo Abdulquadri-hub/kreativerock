@@ -18,7 +18,7 @@ class dbFunctions extends DBClass {
         $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
         // $stmt = $this->connection->prepare($sql); 
         if (!$stmt = $this->connection->prepare($sql)) {
-            error_log('MySQL prepare error: ' . $this->connection->connet_error);
+            error_log('MySQL prepare error: ' . $this->connection->connect_error);
             return false;
         }
         $stmt->bind_param($types, ...$values);

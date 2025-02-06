@@ -102,6 +102,7 @@ class Segment {
     public function getSegments($request){
         
         $email = isset($request['email']) && $request['email'] !== ""  ?  $request['email'] :  "";
+        $id = isset($request['id']) && $request['id'] !== ""  ?  $request['id'] :  "";
         $name = isset($request['name']) && $request['name'] !== ""  ?  $request['name'] :  "";
         $startDate = isset($request['start_date']) && $request['start_date'] !== "" ?  $request['start_date'] :  "";
         $endDate = isset($request['end_date']) && $request['end_date'] !== "" ?  $request['end_date'] :  date("Y-m-d H:i:s");
@@ -135,6 +136,25 @@ class Segment {
                         'status' => true,
                         'code' => 200,
                         'message' => "Segments fetched successfully",
+                        'data' => $segments,
+                    ];
+                }else{
+                    return [
+                        'status' => false,
+                        'code' => 400,
+                        'message' => "Segments not found",
+                        'data' => $segments,
+                    ];
+                }
+            }
+            elseif(!empty($id)){
+                $segments = $this->db->find($this->segmentsTable, "id = '$id' AND user_id = '{$user['id']}'", 'id ASC');
+                // find($table, $where = null, $orderBy = null, $limit = null)
+                if(!empty($segments)){
+                    return [
+                        'status' => true,
+                        'code' => 200,
+                        'message' => "Segment fetched successfully",
                         'data' => $segments,
                     ];
                 }else{

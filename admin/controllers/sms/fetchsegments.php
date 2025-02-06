@@ -24,7 +24,7 @@ $segment = new Segment();
 $email = $_SESSION["elfuseremail"] ??  null;
 $request = $_REQUEST;
 
-$request['email'] = $email;
+$request['email'] = "abdulquadri.aq@gmail.com";
 
 $result =  $segment->getSegments($request);
 echo json_encode($result); 

@@ -130,9 +130,9 @@ class Contact {
                 
         $contactId = $this->insertContact($data); 
         
-        if(!is_null($contactData['segment_id'])){
-            $this->segment->linkContactsToSegment($contactData['segment_id'], $contactId);
-        }
+        // if(!is_null($contactData['segment_id'])){
+        //     $this->segment->linkContactsToSegment($contactData['segment_id'], $contactId);
+        // }
         
         return [
             "status" => true,
@@ -165,27 +165,22 @@ class Contact {
                     $data['user_id'] = $importer['id'];
                     $data['type'] = "FILE";
                     $data['contactsid'] = $contactsId; 
+                    $data['segment_id'] = $jsonData['segment_id']; 
                     
                     $result = $this->insertContact($data);
                     if($result){
 
-                        $contactIds = $this->db->select($this->contactsTable, "id", "contactsId = '$contactsId'");
+                        // $contactIds = $this->db->select($this->contactsTable, "id", "contactsId = '$contactsId'");
     
-                        if(!is_null($jsonData['segment_id'])){
-                                $this->segment->linkContactsToSegment($jsonData['segment_id'], $contactIds);
-                                $importStats['segment_success_count']++;
-                        }
+                        // if(!is_null($jsonData['segment_id'])){
+                        //         $this->segment->linkContactsToSegment($jsonData['segment_id'], $contactIds);
+                        //         $importStats['segment_success_count']++;
+                        // }
 
                         $importStats['status'] = true;
                         $importStats['message'] = "Contacts imported successfully";
                         $importStats['imported']++;
                     }
-                    // $contactExists = $this->db->find($this->contactsTable, "contactsid = '$contactsId' AND email = '{$data['email']}'");
-                    // if ($contactExists) {
-                    //     $this->updateContact($data, $contactsId);
-                    // } else {
-                    //     $this->insertContact($data);
-                    // }
                     
                 } catch (ValidationException $e) {
                     $importStats['failed']++;
@@ -222,30 +217,22 @@ class Contact {
                     $data['user_id'] = $importer['id'];
                     $data['type'] = "TEXT";
                     $data['contactsid'] = $contactsId;  
+                    $data['segment_id'] = $jsonData['segment_id'];  
                     
                     $result = $this->insertContact($data);
                     if($result){
 
-                        $contactIds = $this->db->select($this->contactsTable, "id", "contactsId = '$contactsId'");
+                        // $contactIds = $this->db->select($this->contactsTable, "id", "contactsId = '$contactsId'");
     
-                        if(!is_null($jsonData['segment_id'])){
-                                $this->segment->linkContactsToSegment($jsonData['segment_id'], $contactIds);
-                                $importStats['segment_success_count']++;
-                        }
+                        // if(!is_null($jsonData['segment_id'])){
+                        //         $this->segment->linkContactsToSegment($jsonData['segment_id'], $contactIds);
+                        //         $importStats['segment_success_count']++;
+                        // }
 
                         $importStats['status'] = true;
                         $importStats['message'] = "Contacts imported successfully";
                         $importStats['imported']++;
                     }
-
-                    
-                    // $contactExists = $this->db->find($this->contactsTable, "contactsid = '$contactsId'");
-                    // if ($contactExists) {
-                    //     $this->updateContact($data, $contactsId);
-                    // } else {
-                    //     $this->insertContact($data);
-                    // }
-                    
                     
                 } catch (ValidationException $e) {
                     $importStats['failed']++;

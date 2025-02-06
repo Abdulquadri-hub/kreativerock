@@ -12,6 +12,7 @@ class TwoWaySms {
     private $conversationStateTable = 'conversation_state';
     private $campaignMessagesTable = 'campaign_messages';
     private $usersTable = 'users';
+    private $api;
     public $errors = [];
     
     public function __construct() {
