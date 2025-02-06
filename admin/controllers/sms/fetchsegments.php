@@ -14,9 +14,9 @@ require_once $rootFolder . 'model/user.php';
 require_once $rootFolder . 'model/Segment.php';
 require_once $rootFolder . 'model/Contact.php';
 
-// if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-//     exit(badRequest(204,'Invalid session data. Proceed to login'));
-// }
+if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+    exit(badRequest(204,'Invalid session data. Proceed to login'));
+}
 
 $user = new User();
 $segment = new Segment();

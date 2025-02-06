@@ -14,14 +14,14 @@ require_once $rootFolder . 'model/user.php';
 require_once $rootFolder . 'model/Segment.php';
 require_once $rootFolder . 'model/Contact.php';
 
-// if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-//     exit(badRequest(204,'Invalid session data. Proceed to login'));
-// }
+if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+    exit(badRequest(204,'Invalid session data. Proceed to login'));
+}
 
 $user = new User();
 $contactImporter = new Contact();
 
-$_REQUEST['email'] = $_SESSION["elfuseremail"] ??  "abdulquadri.aq@gmail.com";
+$_REQUEST['email'] = $_SESSION["elfuseremail"] ?? null;
 $result = $contactImporter->getContacts($_REQUEST);
 if(!$result){
    echo json_encode(['status' => false, 'message' => 'Contacts not found.', 'data' => []]); 

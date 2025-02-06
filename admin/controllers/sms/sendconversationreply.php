@@ -20,14 +20,15 @@ require_once $rootFolder . 'model/DotgoApi.php';
 require_once $rootFolder . 'utils/sanitize.php';
 
 
-// if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-//     exit(badRequest(204,'Invalid session data. Proceed to login'));
-// }
+if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+    exit(badRequest(204,'Invalid session data. Proceed to login'));
+}
 
+$email = $_SESSION["elfuseremail"] ??  null;
 $twoWaySms = new TwoWaySms();
 
 $data = $_REQUEST;
-$data['email'] = "abdulquadri.aq@gmail.com";
+$data['email'] = $email;
 $results =  $twoWaySms->sendReply($data);
 echo json_encode($results);
 
