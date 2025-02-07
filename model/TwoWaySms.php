@@ -52,7 +52,7 @@ class TwoWaySms {
     
         // Handle single message or multiple messages
         $messages = isset($webhookData['type']) ? [$webhookData] : $webhookData;
-    
+    echo json_encode($messages);
         foreach ($messages as $messageData) {
             if ($messageData['type'] == 'messageStatus') {
                 $phoneNumber = $messageData['userContact'];
