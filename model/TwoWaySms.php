@@ -39,18 +39,28 @@ class TwoWaySms {
         }
     }
 
-    public function handleMessageStatus($webhookData){
-        $messageData = $this->api->webhook($webhookData);
-        error_log(json_encode($messageData));
-        
-        if ($messageData['type'] == 'messageStatus') 
-        {
-            $phoneNumber = $messageData['userContact'];
-            $status = $messageData['status'];
-            $messageId = $messageData['messageId'];
-            $timestamp = $messageData['timestamp'];
-            
-            $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
+    public function handleMessageStatus($webhookData) {
+        $messages = $this->api->webhook($webhookData);
+        error_log(json_encode($messages));
+    
+        if (is_array($messages)) {
+            foreach ($messages as $messageData) {
+                if ($messageData['type'] == 'messageStatus') {
+                    $status = $messageData['status'];
+                    $messageId = $messageData['messageId'];
+    
+                    $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
+                }
+            }
+        } else {
+
+            if ($messages['type'] == 'messageStatus') {
+                $status = $messages['status'];
+                $messageId = $messages['messageId'];
+    
+                $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
+            }
         }
     }
+    
 }
