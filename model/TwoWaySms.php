@@ -40,11 +40,7 @@ class TwoWaySms {
     }
 
     public function handleMessageStatus($webhookData) {
-  
-        if (is_string($webhookData)) {
-            $webhookData = json_decode($webhookData, true);
-        }
-    
+
         if (!is_array($webhookData)) {
             error_log('Invalid webhook data format');
             return false;
