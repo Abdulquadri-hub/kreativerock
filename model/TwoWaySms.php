@@ -41,17 +41,18 @@ class TwoWaySms {
 
     public function handleMessageStatus($webhookData){
         $messageData = $this->api->webhook($webhookData);
-        
+
         error_log(json_encode($messageData));
 
         if ($messageData['type'] === 'messageStatus') {
+            if(count($messageData) > 0){
+                error_log(json_encode($messageData)); 
+            }
             $status = $messageData['status'];
             $messageId = $messageData['messageId'];
             
-            $this->updateMessagesStatus($messageId, $status);
+            $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '$messageId'");
         }
-        
-
     }
 
     private function updateMessagesStatus($messageId, $status){
