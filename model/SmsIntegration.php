@@ -149,27 +149,26 @@ class SmsIntegration {
         if(count($user) < 0 || empty($user)){
             return false;
         }
-
         
-        $currentBalance = $this->getTotalPurchasedUnitsQty($email);
+        $currentBalance = $this->getTotalUnitsBalance($email);
 
-        $totalUsed = $this->getTotalSpentUnitsQty($email);
-       
         if ($currentBalance < $unitsToDeduct) {
-            return false; 
-        }
-
-        $totalUsed += $unitsToDeduct; 
-        $newBalance = ($currentBalance - $totalUsed);
-        
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
-        if(empty($userUnit)){
             return false;
         }
-         
-        $this->db->update($this->userUnitsTable, ["total_used_qty" => $totalUsed], "user_id = '{$user['id']}'");
-        $this->db->update($this->userUnitsTable, ["total_unit_balance" => $newBalance], "user_id = '{$user['id']}'");
 
+        $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
+        $newBalance = $currentBalance - $unitsToDeduct;
+
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        if (empty($userUnit)) {
+            return false;
+        }
+        
+        $this->db->update($this->userUnitsTable, [
+            "total_used_qty" => $totalUsed,
+            "total_unit_balance" => $newBalance
+        ], "user_id = '{$user['id']}'");
+    
         return true;
     }
     

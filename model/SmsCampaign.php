@@ -91,6 +91,9 @@ class SmsCampaign {
                 if ($params['scheduled'] === 'NOW') {
                     return $this->sendNow($campaignId, $email);
                 }
+                // else{
+                //     return $this->sendLater($campaignId, $email);
+                // }
 
                 return [
                     'status' => true,
@@ -253,52 +256,59 @@ class SmsCampaign {
     }
     
     private function sendNow($campaignId, $email) {
-        
         $campaign = $this->db->find($this->campaignTable, "id = '$campaignId'");
         if (!$campaign) {
             return ['status' => false, 'message' => 'Campaign not found'];
         }
-        
+    
         $phoneNumbers = json_decode($campaign['phone_numbers'], true);
         $requiredUnits = count($phoneNumbers);
-        
-
+    
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
             return ['status' => false, 'message' => 'Insufficient SMS units'];
         }
-        
+    
+        // Send bulk SMS
         $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
-       
+    
         $conversationId = null;
-        if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
+        if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
             $conversationId = $this->conversation->startConversation($campaign['id']);
         }
-        
+    
         $responses = [];
-
+        $failedNumbers = [];
+    
         foreach ($results as $phoneNumber => $result) {
-            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
-            
-            if ($messageId) {
-                $responses[] = [
-                    'phone' => $phoneNumber,
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'message_id' => $result->getMessageId(),
-                    'campaign_id' => $campaign['id'],
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
-            }
-            else{
-                $responses[] = [
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
+            if (!$result->isSuccess()) {
+                $failedNumbers[] = $phoneNumber;
             }
             
+            $responses[] = [
+                'phone' => $phoneNumber,
+                'status' => $result->isSuccess() ? 'sent' : 'failed',
+                'message_id' => $result->getMessageId(),
+                'campaign_id' => $campaign['id'],
+                'error' => $result->isSuccess() ? null : $result->getMessage()
+            ];
         }
-        
+    
+
+        $this->db->insert($this->messagesTable, [
+            'user_id' => $campaign['user_id'],
+            'campaign_id' => $campaign['id'],
+            'conversation_id' => $conversationId ?? null,
+            'destination' => json_encode($phoneNumbers), 
+            'message_type' => 'text',
+            'direction' => 'outgoing',
+            'content' => $campaign['message'],
+            'interaction_type' => ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") ? "automated" : "manual",
+            'rcs_message_id' => !empty($responses) ? $responses[0]['message_id'] : null,
+            'error' => !empty($failedNumbers) ? json_encode($failedNumbers) : null
+        ]);
+    
         $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '$campaignId'");
-        
+    
         return [
             'status' => true,
             'message' => 'Campaign sent successfully',
