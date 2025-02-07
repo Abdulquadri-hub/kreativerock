@@ -39,37 +39,22 @@ class TwoWaySms {
         }
     }
 
-    public function handleMessageStatus($webhookData) {
-
-        if (!is_array($webhookData)) {
-            error_log('Invalid webhook data format');
-            return false;
+    public function handleMessageStatus($webhookData){
+        $messageData = $this->api->webhook($webhookData);
+        error_log(json_encode($messageData));
+        
+        if ($messageData['type'] == 'messageStatus') 
+        {
+            $phoneNumber = $messageData['userContact'];
+            $status = $messageData['status'];
+            $messageId = $messageData['messageId'];
+            $timestamp = $messageData['timestamp'];
+            
+            $this->updateMessagesStatus($messageId, $status);
         }
-    
-        print_r($webhookData);
-
-        foreach ($webhookData as $messageData) {
-            if ($messageData['type'] == 'messageStatus') {
-                $phoneNumber = $messageData['userContact'];
-                $status = $messageData['status'];
-                $messageId = $messageData['messageId'];
-                $timestamp = $messageData['timestamp'];
-                
-                // Update all matching messages
-                $updateResult = $this->db->update(
-                    $this->messagesTable, 
-                    ['status' => $status, 'updated_at' => $timestamp], 
-                    "rcs_message_id = '{$messageId}'"
-                );
-    
-                // Optional: Log the update result
-                if ($updateResult === false) {
-                    error_log("Failed to update message status for MessageID: {$messageId}");
-                }
-            }
-        }
-    
-        return true;
     }
-    
+
+    private function updateMessagesStatus($messageId, $status){
+        return $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '$messageId'");
+    }
 }
