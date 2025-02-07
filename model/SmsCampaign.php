@@ -34,25 +34,35 @@ class SmsCampaign {
 
         $phoneNumbers = [];
         $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
-
-        foreach ($contacts as $key => $contact) {
-            if($params['channel'] === "sms"){
-                if($contact['type'] == "TEXT" || $contact['FILE']){
-                    $phoneNumbers[] = $contact['sms'];
+        
+        if(!empty($contacts)){
+            foreach ($contacts as $key => $contact) {
+                if($params['channel'] === "sms"){
+                    if($contact['type'] == "TEXT" || $contact['FILE']){
+                        $phoneNumbers[] = $contact['sms'];
+                    }
+                    else{
+                        $phoneNumbers[] = $contact['sms'];
+                    }
                 }
                 else{
-                    $phoneNumbers[] = $contact['sms'];
-                }
-            }
-            else{
-                if($contact['type'] == "TEXT" || $contact['FILE']){
-                    $phoneNumbers[] = $contact['whatsapp'];
-                }
-                else{
-                    $phoneNumbers[] = $contact['whatsapp'];
+                    if($contact['type'] == "TEXT" || $contact['FILE']){
+                        $phoneNumbers[] = $contact['whatsapp'];
+                    }
+                    else{
+                        $phoneNumbers[] = $contact['whatsapp'];
+                    }
                 }
             }
         }
+        else {
+            return [
+                'status' => false,
+                'code' => 400,
+                'message' => 'No contacts found fo this segment',
+            ];
+        }
+
         
         $campaignData = [
             'user_id' => $user['id'],
@@ -144,7 +154,7 @@ class SmsCampaign {
             foreach ($campaigns as &$campaign) {
                 if ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") {
                     $campaign['prompts'] = $this->db->select(
-                        $this->promptsResponsesTable, 
+                        $this->conversationPromtsTable, 
                         "*", 
                         "campaign_id = '{$campaign['id']}'"
                     );
@@ -328,41 +338,6 @@ class SmsCampaign {
         }
     }
 
-    private function deleteAssociatedData($messages, $userId) {
-        $conversationIds = [];
-        $rcsUserIds = [];
-        $messageIds = [];
-
-        foreach ($messages as $message) {
-            if (!empty($message['conversation_id'])) {
-                $conversationIds[] = $message['conversation_id'];
-            }
-            if (!empty($message['rcs_user_id'])) {
-                $rcsUserIds[] = $message['rcs_user_id'];
-            }
-            if (!empty($message['message_id'])) {
-                $messageIds[] = $message['message_id'];
-            }
-        }
-
-        if ($conversationIds) {
-            $ids = implode(',', array_unique($conversationIds));
-            $this->db->delete($this->conversationsTable, "conversation_id IN ($ids)");
-        }
-
-        if ($rcsUserIds) {
-            $ids = implode(',', array_unique($rcsUserIds));
-            $this->db->delete($this->rcsUsersTable, "id IN ($ids)");
-        }
-
-        if ($messageIds) {
-            $ids = implode(',', array_unique($messageIds));
-            $this->db->delete($this->messagesTable, 
-                "message_id IN ($ids) AND user_id = '$userId'"
-            );
-        }
-    }
-    
     private function saveMessage($userId, $phoneNumber, $campaign, $conversationId, $result) {
         return $this->db->insert($this->messagesTable, [
             'user_id' => $userId,
