@@ -11,7 +11,7 @@ require_once $rootFolder . 'model/dbclass.php';
 require_once $rootFolder . 'model/model.php';
 require_once $rootFolder . 'model/dbFunctions.php';
 require_once $rootFolder . 'model/user.php';
-require_once $rootFolder . 'model/SmsCampaign.php';
+require_once $rootFolder . 'model/Campaign.php';
 require_once $rootFolder . 'utils/sanitize.php';
 
 if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
@@ -19,11 +19,11 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsCampaign = new SmsCampaign();
+$campaign = new Campaign();
 
 try {
     $_REQUEST['email'] = $_SESSION["elfuseremail"] ??  null;
-    $result = $smsCampaign->getCampaign($_REQUEST);
+    $result = $campaign->getCampaign($_REQUEST);
     if(!$result){
        echo json_encode(['status' => false, 'message' => 'Campaigns not found.', 'data' => []]); 
        exit;
@@ -31,6 +31,6 @@ try {
     
     echo json_encode(['status' => true, 'message' => 'Campaigns fetched successfully.', 'data' => $result]);
     
-} catch (ExceptionType $e) {
+} catch (Exception $e) {
     echo json_encode(['status' => false, 'message' => $e->getMessage()]);
 }

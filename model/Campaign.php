@@ -3,11 +3,11 @@
 require_once 'SmsIntegration.php';
 require_once 'Conversation.php';
 
-class SmsCampaign {
+class Campaign {
     private $db;
     private $smsIntegration;
     private $conversation;
-    private $campaignTable = 'sms_campaigns';
+    private $campaignTable = 'campaigns';
     private $messagesTable = 'messages';
     private $contactsTable = 'contacts';
     private $conversationsTable = 'conversations';
@@ -93,7 +93,7 @@ class SmsCampaign {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
             if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
-                $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+                // $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
             }
 
             if(!empty($campaignId)){
@@ -120,6 +120,134 @@ class SmsCampaign {
                 ];
             }
         } 
+    }
+
+    public function updateCampaign($params, $email) {
+
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if (!$user) {
+            return [
+                'status' => false,
+                'message' => 'User not found'
+            ];
+        }
+
+        $campaignId = $params['campaign_id'] ?? null;
+    
+        $existingCampaign = $this->db->find( $this->campaignTable,  "id = '$campaignId' AND user_id = '{$user['id']}'");
+        if (!$existingCampaign) {
+            return [
+                'status' => false,
+                'message' => 'Campaign not found'
+            ];
+        }
+    
+        if (!$this->validateParams($params)) {
+            return [
+                'status' => false,
+                'message' => 'Missing required fields',
+                'errors' => $this->errors
+            ];
+        }
+    
+        $phoneNumbers = [];
+        $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
+    
+        if (!empty($contacts)) {
+            foreach ($contacts as $contact) {
+                if ($params['channel'] === "sms") {
+                    if ($contact['type'] == "TEXT" || $contact['FILE']) {
+                        $phoneNumbers[] = $contact['sms'];
+                    } else {
+                        $phoneNumbers[] = $contact['sms'];
+                    }
+                } else {
+                    if ($contact['type'] == "TEXT" || $contact['FILE']) {
+                        $phoneNumbers[] = $contact['whatsapp'];
+                    } else {
+                        $phoneNumbers[] = $contact['whatsapp'];
+                    }
+                }
+            }
+        } else {
+            return [
+                'status' => false,
+                'code' => 400,
+                'message' => 'No contacts found for this segment',
+            ];
+        }
+    
+        $updatedCampaignData = [
+            'channel' => $params['channel'],
+            'name' => $params['campaignname'],
+            'type' => $params['campaigntype'],
+            'message' => $params['campaignmessage'],
+            'phone_numbers' => json_encode($phoneNumbers),
+            'sms_pages' => $params['smspages'],
+            'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
+            'repeat_interval' => $params['repeatcampaign'],
+            'response_handling' => $params['responsehandling'] ?? 'manual'
+        ];
+    
+        $updated = $this->db->update($this->campaignTable, $updatedCampaignData, "id = '$campaignId'");
+    
+        if ($updated) {
+            if ($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated") {
+                // $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+            }
+    
+            // if ($params['scheduled'] === 'NOW') {
+            //     return $this->sendNow($campaignId, $email);
+            // }
+    
+            return [
+                'status' => true,
+                'message' => 'Campaign updated successfully',
+                'campaign_id' => $campaignId
+            ];
+        }
+    
+        return [
+            'status' => false,
+            'message' => 'Error updating campaign',
+            'campaign_id' => $campaignId
+        ];
+    }
+    
+    public function deleteCampaign($campaignId, $email) {
+        try {
+            
+            $user = $this->db->find($this->usersTable, "email = '$email'");
+            if (!$user) {
+                return ['status' => false, 'message' => 'User not found'];
+            }
+            
+            $campaign = $this->db->find($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
+            if (!$campaign) {
+                return ['status' => false, 'message' => 'Campaign not found'];
+            }
+            
+    
+            $conversations = $this->db->select($this->conversationsTable, '*', "campaign_id = '{$campaignId}'");
+           
+            foreach ($conversations as $conversation) {
+                $this->db->delete($this->messagesTable, "conversation_id = '{$conversation['id']}'");
+            }
+            
+            $this->db->delete($this->conversationsTable, "campaign_id = '{$campaignId}'");
+            
+            $this->db->delete($this->conversationPromtsTable, "campaign_id = '{$campaignId}'");
+            
+            // Delete the campaign itself
+            $this->db->delete($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
+    
+
+            return ['status' => true, 'message' => 'Campaign deleted successfully'];
+            
+        } catch (Exception $e) {
+
+            return ['status' => false, 'message' => 'Error deleting campaign: ' . $e->getMessage()];
+        }
     }
     
     public function getCampaign($request) {
@@ -163,42 +291,6 @@ class SmsCampaign {
         }
 
         return $campaigns ?: null;
-    }
-
-    public function deleteCampaign($campaignId, $email) {
-        try {
-            
-            $user = $this->db->find($this->usersTable, "email = '$email'");
-            if (!$user) {
-                return ['status' => false, 'message' => 'User not found'];
-            }
-            
-            $campaign = $this->db->find($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
-            if (!$campaign) {
-                return ['status' => false, 'message' => 'Campaign not found'];
-            }
-            
-    
-            $conversations = $this->db->select($this->conversationsTable, '*', "campaign_id = '{$campaignId}'");
-           
-            foreach ($conversations as $conversation) {
-                $this->db->delete($this->messagesTable, "conversation_id = '{$conversation['id']}'");
-            }
-            
-            $this->db->delete($this->conversationsTable, "campaign_id = '{$campaignId}'");
-            
-            $this->db->delete($this->conversationPromtsTable, "campaign_id = '{$campaignId}'");
-            
-            // Delete the campaign itself
-            $this->db->delete($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
-    
-
-            return ['status' => true, 'message' => 'Campaign deleted successfully'];
-            
-        } catch (Exception $e) {
-
-            return ['status' => false, 'message' => 'Error deleting campaign: ' . $e->getMessage()];
-        }
     }
 
     private function validateParams($params) {

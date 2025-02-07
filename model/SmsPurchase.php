@@ -4,6 +4,7 @@
 class SmsPurchase  {
     
     public $model;
+    private $purchases;
     
     public function __construct(){
         $this->model = new Model();
