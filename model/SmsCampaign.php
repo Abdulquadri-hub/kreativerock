@@ -157,50 +157,34 @@ class SmsCampaign {
 
     public function deleteCampaign($campaignId, $email) {
         try {
-            $this->db->beginTransaction();
             
-            $sender = $this->db->find($this->usersTable, "email = '$email'");
-            if (!$sender) {
+            $user = $this->db->find($this->usersTable, "email = '$email'");
+            if (!$user) {
                 return ['status' => false, 'message' => 'User not found'];
             }
-
-            $campaign = $this->db->find($this->campaignTable, "id = '$campaignId'");
+            
+            $campaign = $this->db->find($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
             if (!$campaign) {
                 return ['status' => false, 'message' => 'Campaign not found'];
             }
-
-            $this->db->delete($this->promptsResponsesTable, 
-                "campaign_id = '$campaignId' AND user_id = '{$sender['id']}'"
-            );
-            $this->db->delete($this->keywordResponsesTable, 
-                "campaign_id = '$campaignId' AND user_id = '{$sender['id']}'"
-            );
-
-            $campaignConversationUsers = $this->conversation->getCampaignUsersList($campaignId, $email);
-            foreach ($campaignConversationUsers as $user) {
-                $messages = $this->conversation->getMessagesForUser(
-                    $campaignId, 
-                    $user['phone_number'], 
-                    $email
-                );
-                
-                if ($messages) {
-                    $this->deleteAssociatedData($messages, $sender['id']);
-                }
+    
+            $conversations = $this->db->select($this->conversationsTable, '*', "campaign_id = ?", [$campaignId]);
+            foreach ($conversations as $conversation) {
+                $this->db->delete($this->messagesTable, "conversation_id = '{$conversation['id']}'");
             }
+            
+            $this->db->delete($this->conversationsTable, "campaign_id = '{$campaignId}'");
+            
+            $this->db->delete($this->conversationPromtsTable, "campaign_id = '{$campaignId}'");
+            
+            // Delete the campaign itself
+            $this->db->delete($this->campaignTable, "id = '{$campaignId}' AND user_id = '{$user['id']}'");
+    
 
-            $this->db->delete($this->campaignTable, 
-                "id = '$campaignId' AND user_id = '{$sender['id']}'"
-            );
-            $this->db->delete($this->campaignMessagesTable, 
-                "campaign_id = '$campaignId'"
-            );
-
-            $this->db->commitTransaction();
             return ['status' => true, 'message' => 'Campaign deleted successfully'];
-
+            
         } catch (Exception $e) {
-            $this->db->rollbackTransaction();
+
             return ['status' => false, 'message' => 'Error deleting campaign: ' . $e->getMessage()];
         }
     }

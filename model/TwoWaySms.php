@@ -38,4 +38,19 @@ class TwoWaySms {
             error_log("Error handling incoming message: " . $e->getMessage());
         }
     }
+
+    public function handleMessageStatus($webhookData){
+        $messageData = $this->api->webhook($webhookData);
+        error_log(json_encode($messageData));
+        
+        if ($messageData['type'] == 'messageStatus') 
+        {
+            $phoneNumber = $messageData['userContact'];
+            $status = $messageData['status'];
+            $messageId = $messageData['messageId'];
+            $timestamp = $messageData['timestamp'];
+            
+            $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
+        }
+    }
 }

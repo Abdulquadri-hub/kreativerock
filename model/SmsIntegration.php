@@ -5,9 +5,7 @@ require_once 'DotgoApi.php';
 class SmsIntegration {
     private $api;
     private $db;
-    private $messagesTable = 'messages';
     private $messageLogsTable = 'message_logs';
-    private $conversationsTable = 'conversations';
     private $userUnitsTable = 'user_units';
     private $usersTable = 'users';
 
@@ -163,7 +161,7 @@ class SmsIntegration {
         if (empty($userUnit)) {
             return false;
         }
-        
+
         $this->db->update($this->userUnitsTable, [
             "total_used_qty" => $totalUsed,
             "total_unit_balance" => $newBalance
@@ -172,20 +170,6 @@ class SmsIntegration {
         return true;
     }
     
-    public function handleMessageStatus($webhookData){
-        $messageData = $this->api->webhook($webhookData);
-
-        if ($messageData['type'] == 'messageStatus') 
-        {
-            $phoneNumber = $messageData['userContact'];
-            $status = $messageData['status'];
-            $messageId = $messageData['messageId'];
-            $timestamp = $messageData['timestamp'];
-            echo json_encode($messageData);
-            $this->updateMessagesStatus($messageId, $status);
-        }
-    }
-
     public function checkMessageStatus($messageId) 
     {
         $response = $this->api->checkDeliveryStatus($messageId);
@@ -233,11 +217,5 @@ class SmsIntegration {
 
     private function getTotalWhatsappAccounts() {
         return 0;
-    }
-    
-    private function updateMessagesStatus($messageId, $status){
-        return $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '$messageId'");
-    }
-    
-    
+    }    
 }

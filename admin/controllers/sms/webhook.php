@@ -25,7 +25,6 @@ if(empty($data)){
 }
 
 switch ($data['event']) {
-    
     case 'message':
         $twoWaySms->handleIncomingMessage($data);
         break;
@@ -33,7 +32,7 @@ switch ($data['event']) {
           //
           break;     
     case 'messageStatus':
-        $smsIntegration->handleMessageStatus($data);
+        $twoWaySms->handleMessageStatus($data);
         break;
     case 'response':
         $messageData = $dotgo->handleSuggestedResponse($data);
