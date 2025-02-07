@@ -41,8 +41,9 @@ if (isset($result['status']) && $result['status']) {
 } else {
         
     echo json_encode([
-        'status' => false,
-        'message' =>"An error occurs when creating campaign",
+        'status' => $result['status'],
+        'code' => $result['code'],
+        'message' => $result['message'],
         'errors' => $result['errors'] ?? null
     ]);
 }
