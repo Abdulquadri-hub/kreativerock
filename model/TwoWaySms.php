@@ -41,17 +41,17 @@ class TwoWaySms {
 
     public function handleMessageStatus($webhookData){
         $messageData = $this->api->webhook($webhookData);
-        error_log(json_encode($messageData));
         
-        if ($messageData['type'] == 'messageStatus') 
-        {
-            $phoneNumber = $messageData['userContact'];
+        error_log(json_encode($messageData));
+
+        if ($messageData['type'] === 'messageStatus') {
             $status = $messageData['status'];
             $messageId = $messageData['messageId'];
-            $timestamp = $messageData['timestamp'];
             
             $this->updateMessagesStatus($messageId, $status);
         }
+        
+
     }
 
     private function updateMessagesStatus($messageId, $status){
