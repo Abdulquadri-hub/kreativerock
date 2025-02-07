@@ -40,27 +40,41 @@ class TwoWaySms {
     }
 
     public function handleMessageStatus($webhookData) {
-        $messages = $this->api->webhook($webhookData);
-        error_log(json_encode($messages));
+  
+        if (is_string($webhookData)) {
+            $webhookData = json_decode($webhookData, true);
+        }
     
-        if (is_array($messages)) {
-            foreach ($messages as $messageData) {
-                if ($messageData['type'] == 'messageStatus') {
-                    $status = $messageData['status'];
-                    $messageId = $messageData['messageId'];
+        if (!is_array($webhookData)) {
+            error_log('Invalid webhook data format');
+            return false;
+        }
     
-                    $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
+        // Handle single message or multiple messages
+        $messages = isset($webhookData['type']) ? [$webhookData] : $webhookData;
+    
+        foreach ($messages as $messageData) {
+            if ($messageData['type'] == 'messageStatus') {
+                $phoneNumber = $messageData['userContact'];
+                $status = $messageData['status'];
+                $messageId = $messageData['messageId'];
+                $timestamp = $messageData['timestamp'];
+                
+                // Update all matching messages
+                $updateResult = $this->db->update(
+                    $this->messagesTable, 
+                    ['status' => $status, 'updated_at' => $timestamp], 
+                    "rcs_message_id = '{$messageId}'"
+                );
+    
+                // Optional: Log the update result
+                if ($updateResult === false) {
+                    error_log("Failed to update message status for MessageID: {$messageId}");
                 }
             }
-        } else {
-
-            if ($messages['type'] == 'messageStatus') {
-                $status = $messages['status'];
-                $messageId = $messages['messageId'];
-    
-                $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '{$messageId}'");
-            }
         }
+    
+        return true;
     }
     
 }
