@@ -111,7 +111,7 @@ class dbFunctions extends DBClass {
 
         $types = str_repeat("s", count($data));
         $values = array_values($data);
-
+        error_log(json_encode($values));
         $stmt->bind_param($types, ...$values);
 
         if ($stmt->execute()) {
