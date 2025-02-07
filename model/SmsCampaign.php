@@ -9,11 +9,9 @@ class SmsCampaign {
     private $conversation;
     private $campaignTable = 'sms_campaigns';
     private $messagesTable = 'messages';
-    private $campaignMessagesTable = 'campaign_messages';
-    private $keywordResponsesTable = 'keyword_responses';
-    private $promptsResponsesTable = 'prompts_responses';
     private $contactsTable = 'contacts';
     private $conversationsTable = 'conversations';
+    private $conversationPromtsTable = 'conversation_prompts';
     private $usersTable = 'users';
     public $errors = [];
     
@@ -34,60 +32,81 @@ class SmsCampaign {
             return ['status' => false, 'message' => 'User not found'];
         }
 
+        $phoneNumbers = [];
         $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
 
-        return [
-            'status' => true,
-            'message' => 'Campaign created successfully',
-            'data' => $contacts
-        ];
-
-        if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automatic"){
-            //handle campaign prompts 
+        foreach ($contacts as $key => $contact) {
+            if($params['channel'] === "sms"){
+                if($contact['type'] == "TEXT" || $contact['FILE']){
+                    $phoneNumbers[] = $contact['sms'];
+                }
+                else{
+                    $phoneNumbers[] = $contact['sms'];
+                }
+            }
+            else{
+                if($contact['type'] == "TEXT" || $contact['FILE']){
+                    $phoneNumbers[] = $contact['whatsapp'];
+                }
+                else{
+                    $phoneNumbers[] = $contact['whatsapp'];
+                }
+            }
         }
+        
+        $campaignData = [
+            'user_id' => $user['id'],
+            "channel" =>  $params['channel'],
+            'name' => $params['campaignname'],
+            'type' => $params['campaigntype'],
+            'message' => $params['campaignmessage'],
+            'phone_numbers' => json_encode($phoneNumbers),
+            'sms_pages' => $params['smspages'],
+            'status' => 'draft',
+            'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
+            'repeat_interval' => $params['repeatcampaign'],
+            'response_handling' => $params['responsehandling'] ?? 'manual'
+        ];
+        
+        $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND status = 'draft'");
+        
+        if ($existingCampaign) {
+            $campaignId = $existingCampaign['id'];
+            $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
+            return [
+                'status' => true,
+                'message' => 'Campaign updated successfully',
+                'campaign_id' => $campaignId,
+            ];
 
-        // $phoneNumbers = is_array($params['contacts']) ? $params['contacts'] : [$params['contacts']];
-        
-        // foreach ($phoneNumbers as $number) {
-        //     $rcsCapable = $this->smsIntegration->checkRcsCapability($number);
-        //     // Store RCS capability info if needed
-        // }
-        
-        // $campaignData = [
-        //     'user_id' => $user['id'],
-        //     'name' => $params['campaignname'],
-        //     'type' => $params['campaigntype'],
-        //     'message' => $params['campaignmessage'],
-        //     'phone_numbers' => json_encode($phoneNumbers),
-        //     'sms_pages' => $params['smspages'],
-        //     'status' => 'draft',
-        //     'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
-        //     'repeat_interval' => $params['repeatcampaign'],
-        //     'response_handling' => $params['responseHandling'] ?? 'manual'
-        // ];
-        
-            
-        // $existingCampaign = $this->db->find($this->campaignTable, 
-        //     "user_id = '{$user['id']}' AND status = 'draft'"
-        // );
-        
-        // if ($existingCampaign) {
-        //     $campaignId = $existingCampaign['id'];
-        //     $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
-        // } else {
-        //     $campaignId = $this->db->insert($this->campaignTable, $campaignData);
-        // }
+        } else {
+            $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
-        // if ($params['scheduled'] === 'NOW') {
-        //     return $this->sendCampaign($campaignId, $email);
-        // }
+            if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
+                $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+            }
 
-        // return [
-        //     'status' => true,
-        //     'message' => 'Campaign created successfully',
-        //     'campaign_id' => $campaignId
-        // ];
-        
+            if(!empty($campaignId)){
+    
+                if ($params['scheduled'] === 'NOW') {
+                    return $this->sendNow($campaignId, $email);
+                }
+
+                return [
+                    'status' => true,
+                    'message' => 'Campaign created successfully',
+                    'campaign_id' => $campaignId,
+                ];
+    
+            }
+            else {
+                return [
+                    'status' => false,
+                    'message' => 'Error creating campaign',
+                    'campaign_id' => $campaignId,
+                ];
+            }
+        } 
     }
     
     public function getCampaign($request) {
@@ -225,35 +244,47 @@ class SmsCampaign {
         if ($params['scheduled'] !== 'NOW' && empty($params['scheduledDate'])) {
             $this->errors['scheduledDate'] = 'Schedule date is required for scheduled campaigns';
         }
+
+        // if($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated"){
+        //     if(!isset() || empty($params['prompts']['']));
+        // }
         
         return empty($this->errors);
     }
     
-    private function sendCampaign($campaignId, $email) {
+    private function sendNow($campaignId, $email) {
+        
         $campaign = $this->db->find($this->campaignTable, "id = '$campaignId'");
         if (!$campaign) {
             return ['status' => false, 'message' => 'Campaign not found'];
         }
         
-      
         $phoneNumbers = json_decode($campaign['phone_numbers'], true);
         $requiredUnits = count($phoneNumbers);
         
+
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
             return ['status' => false, 'message' => 'Insufficient SMS units'];
         }
         
         $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
+       
+        $conversationId = null;
+        if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
+            $conversationId = $this->conversation->startConversation($campaign['id']);
+        }
         
         $responses = [];
+
         foreach ($results as $phoneNumber => $result) {
-            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign, $result);
+            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
             
             if ($messageId) {
                 $responses[] = [
                     'phone' => $phoneNumber,
                     'status' => $result->isSuccess() ? 'sent' : 'failed',
                     'message_id' => $result->getMessageId(),
+                    'campaign_id' => $campaign['id'],
                     'error' => $result->isSuccess() ? null : $result->getMessage()
                 ];
             }
@@ -275,31 +306,30 @@ class SmsCampaign {
         ];
     }
     
-    private function handlePrompts($campaignId, $userId, $prompts) {
+    private function handlePrompts($campaignId, $creatorId, $prompts) {
         foreach ($prompts as $prompt) {
             $promptData = [
-                'prompt' => $prompt['prompt'],
                 'campaign_id' => $campaignId,
-                'user_id' => $userId,
-                'expected_response' => $prompt['expectedResponse'],
-                'response_message' => $prompt['response'],
-                'expected_response_type' => $prompt['expectedResponseType'],
-                'next_prompt_id' => $prompt['nextPromptId'] ?? null
+                'user_id' => $creatorId,
+                'message_text' => $prompt['prompt'],
+                'response_type' => $this->mapResponseType($prompt['responsetype']),
+                'response_value' => $prompt['response'],
+                'next_prompt_id' => $prompt['nextpromtid'] ?? null,
+                'parent_prompt_id' => $prompt['parentpromptid'] ?? null,
+                'is_end_prompt' => isset($prompt['isendprompt']) ? $prompt['isendprompt'] : 0
             ];
 
-            $existingPrompt = $this->db->find(
-                $this->promptsResponsesTable, 
-                "campaign_id = '$campaignId' AND user_id = '$userId'"
-            );
+            $existingPrompt = $this->db->find($this->conversationPromtsTable,"campaign_id = '$campaignId' AND message_text = '{$prompt['prompt']}' AND response_type = '{$this->mapResponseType($prompt['responsetype'])}'");
             
             if ($existingPrompt) {
-                $this->db->update(
-                    $this->promptsResponsesTable, 
-                    $promptData, 
-                    "id = '{$existingPrompt['id']}'"
-                );
+                $this->db->update($this->conversationPromtsTable,$promptData,"id = '{$existingPrompt['id']}'");
+                $this->updatePromptReferences($existingPrompt['id'], $promptData['next_prompt_id']);
             } else {
-                $this->db->insert($this->promptsResponsesTable, $promptData);
+                $promptId = $this->db->insert($this->conversationPromtsTable, $promptData);
+                
+                if (!isset($prompt['parentpromptid'])) {
+                    $this->conversation->startConversation($campaignId, $promptId);
+                }
             }
         }
     }
@@ -339,25 +369,33 @@ class SmsCampaign {
         }
     }
     
-    private function saveMessage($userId, $phoneNumber, $campaign, $result) {
+    private function saveMessage($userId, $phoneNumber, $campaign, $conversationId, $result) {
         return $this->db->insert($this->messagesTable, [
             'user_id' => $userId,
             'campaign_id' => $campaign['id'] ?? null,
-            'destinations' => json_encode($phoneNumber),
+            'conversation_id' => $conversationId ?? null,
+            'destination' => $phoneNumber,
             'message_type' => 'text',
             'direction' => 'outgoing',
             'content' =>  $campaign['message'],
-            'interaction_type' => 'prompt',
+            'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
             'rcs_message_id' => $result->getMessageId(),
             'error' => $result->isSuccess() ? null : $result->getMessage()
         ]);
     }
 
-    public function checkMessageStatus($messageId) {
-        return $this->smsIntegration->checkMessageStatus($messageId);
+    private function updatePromptReferences($promptId, $newNextpromptId) {
+        $this->db->update($this->conversationPromtsTable,['next_prompt_id' => $newNextpromptId],"next_prompt_id = '{$promptId}'");
     }
 
-    public function checkRcsCapability($phoneNumber) {
-        return $this->smsIntegration->checkRcsCapability($phoneNumber);
+    private function mapResponseType($oldType) {
+        $typeMap = [
+            'text' => 'text',
+            'keyword' => 'keyword',
+            'options' => 'options',
+            // Add more mappings as needed
+        ];
+        
+        return $typeMap[$oldType] ?? 'text';
     }
 }

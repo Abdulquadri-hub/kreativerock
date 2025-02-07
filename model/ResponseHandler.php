@@ -61,7 +61,7 @@ class ResponseHandler {
     
     public function getErrorDetails()
     {
-        if(!$this->isSuccess)
+        if(!$this->isSuccess())
         {
             return [
                 'code' => $this->getStatusCode(),

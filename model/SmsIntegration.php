@@ -7,12 +7,7 @@ class SmsIntegration {
     private $db;
     private $messagesTable = 'messages';
     private $messageLogsTable = 'message_logs';
-    private $rcsUsersTable = 'rcs_users';
     private $conversationsTable = 'conversations';
-    private $keyWordsTable = 'keywords';
-    private $promptsTable = 'prompts';
-    private $smsTransactionsTable = 'sms_transactions';
-    private $smsPackagesTable = 'sms_packages';
     private $userUnitsTable = 'user_units';
     private $usersTable = 'users';
 
@@ -76,10 +71,10 @@ class SmsIntegration {
                 'created_at' => date('Y-m-d H:i:s')
             ]);
         } catch (Exception $e) {
-            $this->logSystem('error', 'Failed to log message', [
+            return [
                 'message_id' => $messageId,
                 'error' => $e->getMessage()
-            ]);
+            ];
         }
     }
     
@@ -154,16 +149,18 @@ class SmsIntegration {
         if(count($user) < 0 || empty($user)){
             return false;
         }
+
         
         $currentBalance = $this->getTotalPurchasedUnitsQty($email);
-        $totalUsed = $this->getTotalSpentUnitsQty($email);
 
+        $totalUsed = $this->getTotalSpentUnitsQty($email);
+       
         if ($currentBalance < $unitsToDeduct) {
             return false; 
         }
 
-        $newBalance = ($currentBalance - $unitsToDeduct);
         $totalUsed += $unitsToDeduct; 
+        $newBalance = ($currentBalance - $totalUsed);
         
         $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         if(empty($userUnit)){
@@ -185,7 +182,7 @@ class SmsIntegration {
             $status = $messageData['status'];
             $messageId = $messageData['messageId'];
             $timestamp = $messageData['timestamp'];
-            
+            echo json_encode($messageData);
             $this->updateMessagesStatus($messageId, $status);
         }
     }
@@ -204,7 +201,7 @@ class SmsIntegration {
 
     public function checkRcsCapability($phoneNumber) {
         $response = $this->api->checkRCSCapability($phoneNumber);
-        
+        echo json_encode($response); 
         if ($response->isSuccess()) {
             $capabilities = $response->getData();
             return $capabilities;
@@ -214,67 +211,32 @@ class SmsIntegration {
         }
     }
     
-    public function getOrCreateRcsUser($phoneNumber) 
-    {
-        $user = $this->db->select($this->rcsUsersTable, 'id', "phone_number = '$phoneNumber' AND status = 'open'", 'id', 1);
-        if (!empty($user)) 
-        {
-            return $user[0]['id'];
-            
-        } else {
-            $userId = $this->db->insert($this->rcsUsersTable, [
-                'phone_number' => $phoneNumber
-            ]);
-            return $userId;
-        }
-    }
-
-    public function getOrCreateConversation($userId) 
-    {
-        
-        $conversation = $this->db->select($this->conversationsTable, 'conversation_id', "rcs_user_id  = $userId AND status = 'open'");
-        if(!empty($conversation)) 
-        {
-            return $conversation[0]['conversation_id'];
-            
-        } else {
-            return $this->db->insert($this->conversationsTable, [
-                'rcs_user_id' => $userId
-            ]);
-        }
-    }
-    
     private function getTotalRegisteredUsers() {
-        return $this->db->selectSum('users', "*");
+        $users =  $this->db->select('users', "*");
+        if(is_array($users)){
+            return count($users) ?? 0;
+        }
     }
 
     private function getTotalOnlineUsers() {
-        return $this->db->selectSum('users',  "*", "online = 'YES'");
+        $users =  $this->db->select('users', "*");
+        if(is_array($users)){
+            return count($users) ?? 0;
+        }
     }
 
     private function getTotalSmsAccounts() {
-        return $this->db->selectSum('rcs_users',  "*", "status = 'open'");
+        $users =  $this->db->select('users', "*");
+        if(is_array($users)){
+            return count($users) ?? 0;
+        }
     }
 
     private function getTotalWhatsappAccounts() {
         return 0;
     }
     
-    private function createMessage($conversationId, $userId, $type, $direction, $content, $rcsMessageId, $error = NULL) {
-        $messageId = $this->db->insert($this->messagesTable, [
-            'conversation_id' => $conversationId,
-            'rcs_user_id' => $rcsUserId,
-            'message_type' => $type,
-            'direction' => $direction,
-            'content' => $content,
-            'rcs_message_id' => $rcsMessageId,
-            'error' => $error ? $error : "NULL"
-        ]);
-        return $messageId;  
-    }
-    
-    private function updateMessagesStatus($messageId, $status)
-    {
+    private function updateMessagesStatus($messageId, $status){
         return $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '$messageId'");
     }
     
