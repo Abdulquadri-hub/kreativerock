@@ -177,8 +177,10 @@ class SmsCampaign {
             if (!$campaign) {
                 return ['status' => false, 'message' => 'Campaign not found'];
             }
+            
     
-            $conversations = $this->db->select($this->conversationsTable, '*', "campaign_id = ?", [$campaignId]);
+            $conversations = $this->db->select($this->conversationsTable, '*', "campaign_id = '{$campaignId}'");
+           
             foreach ($conversations as $conversation) {
                 $this->db->delete($this->messagesTable, "conversation_id = '{$conversation['id']}'");
             }
