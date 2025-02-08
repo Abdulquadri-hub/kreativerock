@@ -1,91 +1,123 @@
-<?php 
+<?php
 
 class ApiKeyManager {
-    
     private $db;
-    private $table = 'api_users';
-    private $jwtSecretKey = '!@^&%(*&^%)kreativerock!@#$%^&*jwt$%$secret&*&^^%key';
+    private $table = 'users';
+    private const KEY_LENGTH = 15; 
+    private const MAX_FAILED_ATTEMPTS = 5; 
+    private const RATE_LIMIT_WINDOW = 300; 
     
     public function __construct(){
         $this->db = new dbFunctions();
     }
     
-    public function generateKeys(){
-        $publicKey = bin2hex(random_bytes(32));
-        $secretKey = bin2hex(random_bytes(32));
-        
-        $hashedSecretKey = password_hash($secretKey, PASSWORD_ARGON2ID);
-        $apiUserId = $this->db->insert($this->table, [
-            'public_key' => $publicKey,
-            'secret_key' => $hashedSecretKey
-        ]);
-        
-        if($apiUserId > 0){
-            return [
-                'public_key' => $publicKey,
-                'secret_key' => $secretKey
-            ];
-        }else {
+    public function generateApiKey($userId){
+        try {
+            // Generate a more secure API key with prefix for easy identification
+            $randomBytes = random_bytes(self::KEY_LENGTH);
+            $apiKey = 'kr_' . bin2hex($randomBytes);
+            
+            // Store the hashed API key using more secure hashing
+            // $hashedApiKey = password_hash($apiKey, PASSWORD_ARGON2ID, [
+            //     'memory_cost' => 65536,
+            //     'time_cost' => 4,
+            //     'threads' => 3
+            // ]);
+            
+            $updated = $this->db->update($this->table, [
+                'api_key' => $apiKey,
+                'api_key_generated_at' => date('Y-m-d H:i:s'),
+                'api_key_last_used' => null,
+                'failed_auth_attempts' => 0
+            ], "id = '{$userId}'");
+            
+            if (!$updated) {
+                return [
+                    "status" => false,
+                    "message" => "Failed to update user with new API key"
+                ];
+            }
+            
+            return $apiKey;
+            
+        } catch (Exception $e) {
+            error_log("API Key Generation Error: " . $e->getMessage());
             return null;
         }
     }
     
-    public function validateKeys($publicKey, $secretKey){
-        $apiUser = $this->db->select($this->table, 'id, secret_key', "public_key = '$publicKey'");
-        if (!$apiUser) {
+    public function validateApiKey($apiKey){
+        try {
+            // Get user with attempted validation
+            $user = $this->db->select($this->table, 
+                'id, api_key, failed_auth_attempts, last_failed_attempt', 
+                "api_key IS NOT NULL"
+            );
+            
+            if (!$user) {
+                return false;
+            }
+            
+            foreach ($user as $u) {
+                // Check rate limiting for failed attempts
+                if ($this->isRateLimited($u)) {
+                    return [
+                        "status" => false,
+                        "message" => "Too many failed attempts. Try again later."
+                    ];
+                }
+                
+                if ($apiKey === $u['api_key']) {
+                    $this->updateAuthStatus($u['id'], true);
+                    return $u['id'];
+                }
+            }
+            
+            // Increment failed attempts
+            $this->updateAuthStatus($user['id'], false);
             return false;
-        }
-        if($apiUser && is_array($apiUser) && password_verify($secretKey, $apiUser['secret_key'])){
-            return $apiUser['id'];
+            
+        } catch (Exception $e) {
+            error_log("API Key Validation Error: " . $e->getMessage());
+            return false;
         }
     }
     
-    public function generateBearer($apiUserId){
-        $header = json_encode(['typ' => 'jwt', 'alg' => 'HS256']);
-        $payload = json_encode([
-            'api_user_id' => $apiUserId, 
-            'exp' => time() + 3600, // 1 hour
-        ]);
+    private function isRateLimited($user) {
+        if ($user['failed_auth_attempts'] >= self::MAX_FAILED_ATTEMPTS) {
+            $lastFailedTime = strtotime($user['last_failed_attempt']);
+            if (time() - $lastFailedTime < self::RATE_LIMIT_WINDOW) {
+                return true;
+            }
+            // Reset attempts after window expires
+            $this->resetFailedAttempts($user['id']);
+        }
+        return false;
+    }
+
+    private function updateAuthStatus($userId, $success) {
+        if ($success) {
+            // On successful auth, reset failed attempts and update last used time
+            $data = [
+                'failed_auth_attempts' => 0, 
+                'api_key_last_used' => date('Y-m-d H:i:s')
+            ];
+        } else {
+            // On failed auth, get current failed attempts and increment
+            $user = $this->db->select($this->table, 'failed_auth_attempts', "id = '$userId'");
+            $currentAttempts = isset($user['failed_auth_attempts']) ? $user['failed_auth_attempts'] : 0;
+            
+            $data = [
+                'failed_auth_attempts' => $currentAttempts + 1,
+                'last_failed_attempt' => date('Y-m-d H:i:s')
+            ];
+        }
         
-        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-        
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $this->jwtSecretKey);
-        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-        
-        $result = json_decode($payload, true);
-        return ['token' => $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature, 'exp' => $result['exp']];
-        
+        $this->db->update($this->table, $data, "id = '$userId'");
     }
     
-    public function validateBearer($token) {
-        $tokenParts = explode('.', $token);
-        if (count($tokenParts) != 3) {
-            return false;
-        }
-
-        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1])), true);
-
-        if ($payload === null || !isset($payload['api_user_id']) || !isset($payload['exp'])) {
-            return false;
-        }
-
-        if ($payload['exp'] < time()) {
-            return false;
-        }
-
-        $signature = hash_hmac('sha256', $tokenParts[0] . "." . $tokenParts[1], $this->jwtSecretKey);
-        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-
-        if ($base64UrlSignature !== $tokenParts[2]) {
-            echo "yes";
-            return false;
-        }
-
-        return $payload['api_user_id'];
+    private function resetFailedAttempts($userId) {
+        $this->db->update($this->table, ['failed_auth_attempts' => 0], "id = '{$userId}'");
     }
-    
-    
-    
-    
 }
+

@@ -9,6 +9,7 @@ require_once $rootFolder . 'model/dbFunctions.php';
 require_once $rootFolder . 'model/ExternalSmsApi.php';
 require_once $rootFolder . 'utils/sanitize.php';
 
+
 $externalSmsApi = new ExternalSmsApi();
 
-$externalSmsApi->generateAPIKeys();
+// $externalSmsApi->handleMessageStatusRequest();

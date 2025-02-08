@@ -52,9 +52,9 @@ class SmsIntegration {
         {
             if ($response->isSuccess()) 
             {
-                $responses = $response->getData();
+                $responses[$phoneNumber] = $response;
             } else {
-                $responses = $response->getErrorDetails();
+                $responses[$phoneNumber] = $response->getErrorDetails();
             }
         }
         return $responses;

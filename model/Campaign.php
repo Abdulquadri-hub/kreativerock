@@ -23,6 +23,56 @@ class Campaign {
         $this->whatsappIntegration = new WhatsAppIntegration();
         $this->conversation = new Conversation();
     }
+
+    public function getUserTransactionalDetails($email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if (!$user) {
+            return ['status' => false, 'message' => 'User not found'];
+        }
+
+        $baseUrl = "https://comeandsee.com.ng/kreativerock/api/v1";
+
+        return [
+            "status" => true,
+            "code" => "200",
+            "message" => "User transactional api information fetched",
+            "data" => [
+                "baseURL" =>  $baseUrl,  
+                "api_key" => $user['api_key'],
+                "api_key_generated_at" => $user['api_key_generated_at'],
+                "api_key_last_used" => $user['api_key_last_used']
+            ]
+        ];
+    }
+
+    public function apiPlayground($recipients, $message, $email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if (!$user) {
+            return ['status' => false, 'message' => 'User not found'];
+        }
+        
+        $results = $this->smsIntegration->sendBulkOneWaySms([$recipients], $message);
+            
+        $responses = [];
+        foreach ($results as $phoneNumber => $result) {
+            
+            $responses[] = [
+                'recipient' => $phoneNumber,
+                'status' => $result->isSuccess() ? $result->getMessageStatus() : 'failed',
+                'message_id' => $result->getMessageId(),
+                'error' => $result->isSuccess() ? null : $result->getMessage()
+            ];
+        }
+        
+        $response = [
+            'status' => true,
+            'code' => 200,
+            'recipients_count' => count($recipients),
+            'data' => $responses
+        ];
+
+        return $response;
+    }
     
     public function createCampaign($params, $email) {
        
@@ -384,8 +434,7 @@ class Campaign {
         }
     }
     
-
-    
+ 
     private function handlePrompts($campaignId, $creatorId, $prompts) {
         foreach ($prompts as $prompt) {
             $promptData = [
@@ -453,26 +502,15 @@ class Campaign {
         }
         
         $responses = [];
-
         foreach ($results as $phoneNumber => $result) {
-            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
-            
-            if ($messageId) {
-                $responses[] = [
-                    'phone' => $phoneNumber,
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'message_id' => $result->getMessageId(),
-                    'campaign_id' => $campaign['id'],
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
-            }
-            else{
-                $responses[] = [
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
-            }
-            
+            $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
+            $responses[] = [
+                'phone' => $phoneNumber,
+                'status' => $result->isSuccess() ? 'sent' : 'failed',
+                'message_id' => $result->getMessageId(),
+                'campaign_id' => $campaign['id'],
+                'error' => $result->isSuccess() ? null : $result->getMessage()
+            ];
         }
         
         $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
