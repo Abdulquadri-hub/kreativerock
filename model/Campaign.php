@@ -88,7 +88,7 @@ class Campaign {
             $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
             return [
                 'status' => true,
-                'message' => 'Campaign is saved as draft and updated successfully',
+                'message' => 'Campaign is saved as draft and not sent',
                 'campaign_id' => $campaignId,
             ];
         } else {
