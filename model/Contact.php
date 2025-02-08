@@ -18,6 +18,7 @@ class Contact {
         $email = isset($request['email']) && $request['email'] !== ""  ?  $request['email'] :  "";
         $type = isset($request['type']) && $request['type'] !== ""  ?  $request['type'] :  "";
         $contactsid = isset($request['contactsid']) && $request['contactsid'] !== ""  ?  $request['contactsid'] :  "";
+        $segment_id = isset($request['segment_id']) && $request['segment_id'] !== ""  ?  $request['segment_id'] :  "";
         $startDate = isset($request['start_date']) && $request['start_date'] !== "" ?  $request['start_date'] :  "";
         $endDate = isset($request['end_date']) && $request['end_date'] !== "" ?  $request['end_date'] :  date("Y-m-d H:i:s");
         
@@ -64,6 +65,14 @@ class Contact {
             }
             elseif(!empty($type)){
                 $contacts = $this->db->select($this->contactsTable, "*", "type = '$type' AND user_id = '{$importer['id']}'", 'contact_id ASC');
+                if(!empty($contacts)){
+                    return $contacts;
+                }else{
+                    return null;
+                }
+            }
+            elseif(!empty($segment_id)){
+                $contacts = $this->db->select($this->contactsTable, "*", "segment_id = '$segment_id' AND user_id = '{$importer['id']}'", 'contact_id ASC');
                 if(!empty($contacts)){
                     return $contacts;
                 }else{

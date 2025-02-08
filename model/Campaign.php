@@ -38,12 +38,12 @@ class Campaign {
         $segmentIds = is_array($params['segment_id']) ? $params['segment_id'] : [$params['segment_id']];
 
         $phoneNumbers = [];
-        $segmentIds = array_map(function($id) { return $id; 
+        $segmentIds = array_map(function($id) { 
+            return $id; 
         }, $segmentIds);
         
         $whereClause = "segment_id IN (" . implode(',', $segmentIds) . ")";
         $contacts = $this->db->select($this->contactsTable, "*", $whereClause);
-        // $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
         
         if(!empty($contacts)){
             foreach ($contacts as $key => $contact) {
@@ -81,17 +81,16 @@ class Campaign {
             'interactive_data' => isset($params['interactive_data']) ? json_encode($params['interactive_data']) : null
         ];
         
-        $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND status = 'draft'");
-        
+        $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}' AND status = 'draft'");
+
         if ($existingCampaign) {
             $campaignId = $existingCampaign['id'];
             $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
             return [
                 'status' => true,
-                'message' => 'Campaign updated successfully',
+                'message' => 'Campaign is saved as draft and updated successfully',
                 'campaign_id' => $campaignId,
             ];
-
         } else {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
