@@ -1,11 +1,13 @@
 <?php
 
+require_once 'WhatsAppIntegration.php';
 require_once 'SmsIntegration.php';
 require_once 'Conversation.php';
 
 class Campaign {
     private $db;
     private $smsIntegration;
+    private $whatsappIntegration;
     private $conversation;
     private $campaignTable = 'campaigns';
     private $messagesTable = 'messages';
@@ -18,6 +20,7 @@ class Campaign {
     public function __construct() {
         $this->db = new dbFunctions();
         $this->smsIntegration = new SmsIntegration();
+        $this->whatsappIntegration = new WhatsAppIntegration();
         $this->conversation = new Conversation();
     }
     
@@ -38,20 +41,10 @@ class Campaign {
         if(!empty($contacts)){
             foreach ($contacts as $key => $contact) {
                 if($params['channel'] === "sms"){
-                    if($contact['type'] == "TEXT" || $contact['FILE']){
-                        $phoneNumbers[] = $contact['sms'];
-                    }
-                    else{
-                        $phoneNumbers[] = $contact['sms'];
-                    }
+                    $phoneNumbers[] = $contact['sms'];
                 }
-                else{
-                    if($contact['type'] == "TEXT" || $contact['FILE']){
-                        $phoneNumbers[] = $contact['whatsapp'];
-                    }
-                    else{
-                        $phoneNumbers[] = $contact['whatsapp'];
-                    }
+                elseif($params['channel'] === "whatsapp"){
+                    $phoneNumbers[] = $contact['whatsapp'];
                 }
             }
         }
@@ -75,7 +68,11 @@ class Campaign {
             'status' => 'draft',
             'scheduled_date' => $params['scheduled'] === 'NOW' ? null : $params['scheduledDate'],
             'repeat_interval' => $params['repeatcampaign'],
-            'response_handling' => $params['responsehandling'] ?? 'manual'
+            'response_handling' => $params['responsehandling'] ?? 'manual',
+            'message_type' => $params['message_type'] ?? 'text', // text, media, interactive
+            'media_url' => $params['media_url'] ?? null,
+            'media_caption' => $params['media_caption'] ?? null,
+            'interactive_data' => isset($params['interactive_data']) ? json_encode($params['interactive_data']) : null
         ];
         
         $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND status = 'draft'");
@@ -101,9 +98,6 @@ class Campaign {
                 if ($params['scheduled'] === 'NOW') {
                     return $this->sendNow($campaignId, $email);
                 }
-                // else{
-                //     return $this->sendLater($campaignId, $email);
-                // }
 
                 return [
                     'status' => true,
@@ -336,6 +330,27 @@ class Campaign {
             $this->errors['scheduledDate'] = 'Schedule date is required for scheduled campaigns';
         }
 
+        if ($params['channel'] === 'sms' && strlen($params['campaignmessage']) > 160) {
+            $this->errors['campaignmessage'] = 'SMS message cannot exceed 160 characters';
+        }
+
+        if ($params['channel'] === 'whatsapp') {
+            if (isset($params['message_type'])) {
+                switch ($params['message_type']) {
+                    case 'media':
+                        if (empty($params['media_url'])) {
+                            $this->errors['media_url'] = 'Media URL is required for media messages';
+                        }
+                        break;
+                    case 'interactive':
+                        if (empty($params['interactive_data'])) {
+                            $this->errors['interactive_data'] = 'Interactive data is required for interactive messages';
+                        }
+                        break;
+                }
+            }
+        }
+
         // if($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated"){
         //     if(!isset() || empty($params['prompts']['']));
         // }
@@ -353,110 +368,18 @@ class Campaign {
         $phoneNumbers = json_decode($campaign['phone_numbers'], true);
         $requiredUnits = count($phoneNumbers);
         
-
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
             return ['status' => false, 'message' => 'Insufficient SMS units'];
         }
-        
-        $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
-       
-        $conversationId = null;
-        if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
-            $conversationId = $this->conversation->startConversation($campaign['id']);
-        }
-        
-        $responses = [];
 
-        foreach ($results as $phoneNumber => $result) {
-            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
-            
-            if ($messageId) {
-                $responses[] = [
-                    'phone' => $phoneNumber,
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'message_id' => $result->getMessageId(),
-                    'campaign_id' => $campaign['id'],
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
-            }
-            else{
-                $responses[] = [
-                    'status' => $result->isSuccess() ? 'sent' : 'failed',
-                    'error' => $result->isSuccess() ? null : $result->getMessage()
-                ];
-            }
-            
+        if ($campaign['channel'] === 'whatsapp') {
+            return $this->whatsAppCampaign($campaign, $phoneNumbers);
+        } else {
+            return $this->sMsCampaign($campaign, $phoneNumbers);
         }
-        
-        $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '$campaignId'");
-        
-        return [
-            'status' => true,
-            'message' => 'Campaign sent successfully',
-            'data' => $responses
-        ];
     }
     
-    // private function sendNow($campaignId, $email) {
-    //     $campaign = $this->db->find($this->campaignTable, "id = '$campaignId'");
-    //     if (!$campaign) {
-    //         return ['status' => false, 'message' => 'Campaign not found'];
-    //     }
-    
-    //     $phoneNumbers = json_decode($campaign['phone_numbers'], true);
-    //     $requiredUnits = count($phoneNumbers);
-    
-    //     if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
-    //         return ['status' => false, 'message' => 'Insufficient SMS units'];
-    //     }
-    
-    //     // Send bulk SMS
-    //     $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
-    
-    //     $conversationId = null;
-    //     if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
-    //         $conversationId = $this->conversation->startConversation($campaign['id']);
-    //     }
-    
-    //     $responses = [];
-    //     $failedNumbers = [];
-    
-    //     foreach ($results as $phoneNumber => $result) {
-    //         if (!$result->isSuccess()) {
-    //             $failedNumbers[] = $phoneNumber;
-    //         }
-            
-    //         $responses[] = [
-    //             'phone' => $phoneNumber,
-    //             'status' => $result->isSuccess() ? 'sent' : 'failed',
-    //             'message_id' => $result->getMessageId(),
-    //             'campaign_id' => $campaign['id'],
-    //             'error' => $result->isSuccess() ? null : $result->getMessage()
-    //         ];
-    //     }
-    
 
-    //     $this->db->insert($this->messagesTable, [
-    //         'user_id' => $campaign['user_id'],
-    //         'campaign_id' => $campaign['id'],
-    //         'conversation_id' => $conversationId ?? null,
-    //         'destination' => json_encode($phoneNumbers), 
-    //         'message_type' => 'text',
-    //         'direction' => 'outgoing',
-    //         'content' => $campaign['message'],
-    //         'interaction_type' => ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") ? "automated" : "manual",
-    //         'rcs_message_id' => !empty($responses) ? $responses[0]['message_id'] : null,
-    //         'error' => !empty($failedNumbers) ? json_encode($failedNumbers) : null
-    //     ]);
-    
-    //     $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '$campaignId'");
-    
-    //     return [
-    //         'status' => true,
-    //         'message' => 'Campaign sent successfully',
-    //         'data' => $responses
-    //     ];
-    // }
     
     private function handlePrompts($campaignId, $creatorId, $prompts) {
         foreach ($prompts as $prompt) {
@@ -514,5 +437,108 @@ class Campaign {
         ];
         
         return $typeMap[$oldType] ?? 'text';
+    }
+
+    private function sMsCampaign($campaign, $phoneNumbers) {
+        $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
+       
+        $conversationId = null;
+        if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
+            $conversationId = $this->conversation->startConversation($campaign['id']);
+        }
+        
+        $responses = [];
+
+        foreach ($results as $phoneNumber => $result) {
+            $messageId = $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
+            
+            if ($messageId) {
+                $responses[] = [
+                    'phone' => $phoneNumber,
+                    'status' => $result->isSuccess() ? 'sent' : 'failed',
+                    'message_id' => $result->getMessageId(),
+                    'campaign_id' => $campaign['id'],
+                    'error' => $result->isSuccess() ? null : $result->getMessage()
+                ];
+            }
+            else{
+                $responses[] = [
+                    'status' => $result->isSuccess() ? 'sent' : 'failed',
+                    'error' => $result->isSuccess() ? null : $result->getMessage()
+                ];
+            }
+            
+        }
+        
+        $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
+        
+        return [
+            'status' => true,
+            'message' => 'Campaign sent successfully',
+            'data' => $responses
+        ];
+    }
+
+    private function whatsAppCampaign($campaign, $phoneNumbers) {
+        $responses = [];
+        $conversationId = null;
+
+        if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
+            $conversationId = $this->conversation->startConversation($campaign['id']);
+        }
+
+        foreach ($phoneNumbers as $phoneNumber) {
+            $result = false;
+
+            switch ($campaign['message_type']) {
+                case 'text':
+                    $result = $this->whatsappIntegration->sendText(
+                        $phoneNumber,
+                        $campaign['message']
+                    );
+                    break;
+
+                case 'media':
+                    $result = $this->whatsappIntegration->sendMedia(
+                        $phoneNumber,
+                        $campaign['media_type'],
+                        $campaign['media_url'],
+                        $campaign['media_caption']
+                    );
+                    break;
+
+                case 'interactive':
+                    $interactiveData = json_decode($campaign['interactive_data'], true);
+                    $result = $this->whatsappIntegration->sendInteractive(
+                        $phoneNumber,
+                        $campaign['message'],
+                        $interactiveData['type'],
+                        $interactiveData['action']
+                    );
+                    break;
+            }
+
+            $this->saveMessage($campaign['user_id'],$phoneNumber,$campaign,$conversationId,
+                (object)[
+                    'isSuccess' => function() use ($result) { return $result; },
+                    'getMessageId' => function() { return uniqid('wa_'); },
+                    'getMessage' => function() { return null; }
+                ]
+            );
+
+            $responses[] = [
+                'phone' => $phoneNumber,
+                'status' => $result ? 'sent' : 'failed',
+                'campaign_id' => $campaign['id']
+            ];
+        }
+
+        $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
+
+        return [
+            'status' => true,
+            'message' => 'WhatsApp campaign sent successfully',
+            'data' => $responses
+        ];
     }
 }
