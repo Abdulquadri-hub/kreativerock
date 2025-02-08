@@ -2,10 +2,10 @@
 
 class WhatsAppIntegration {
     // API configuration
-    private string $userId ;
-    private string $password;
-    private string $baseUrl;
-    private array $defaultConfig;
+    private $userId;
+    private $password;
+    private $baseUrl;
+    private $defaultConfig;
     
     // Response tracking
     private $lastResponse = null;

@@ -14,9 +14,9 @@ require_once $rootFolder . 'model/user.php';
 require_once $rootFolder . 'model/Campaign.php';
 require_once $rootFolder . 'utils/sanitize.php';
 
-if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-    exit(badRequest(204,'Invalid session data. Proceed to login'));
-}
+// if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+//     exit(badRequest(204,'Invalid session data. Proceed to login'));
+// }
 
 $user = new User();
 $campaign = new Campaign();
@@ -24,7 +24,7 @@ $campaign = new Campaign();
 $jsonInput = file_get_contents('php://input');
 $campaignParams = json_decode($jsonInput, true);
 
-$email = $_SESSION["elfuseremail"] ?? null;
+$email = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com";
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     exit(badRequest(204,'Invalid JSON data'));

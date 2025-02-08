@@ -35,8 +35,15 @@ class Campaign {
             return ['status' => false, 'message' => 'User not found'];
         }
 
+        $segmentIds = is_array($params['segment_id']) ? $params['segment_id'] : [$params['segment_id']];
+
         $phoneNumbers = [];
-        $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
+        $segmentIds = array_map(function($id) { return $id; 
+        }, $segmentIds);
+        
+        $whereClause = "segment_id IN (" . implode(',', $segmentIds) . ")";
+        $contacts = $this->db->select($this->contactsTable, "*", $whereClause);
+        // $contacts = $this->db->select($this->contactsTable, "*", "segment_id = {$params['segment_id']}");
         
         if(!empty($contacts)){
             foreach ($contacts as $key => $contact) {
@@ -56,7 +63,6 @@ class Campaign {
             ];
         }
 
-        
         $campaignData = [
             'user_id' => $user['id'],
             "channel" =>  $params['channel'],
