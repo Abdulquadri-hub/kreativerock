@@ -73,7 +73,7 @@ class ExternalSmsApi {
                 
                 $responses[] = [
                     'recipient' => $phoneNumber,
-                    'status' => $result->isSuccess() ? $result->getMessageStatus() : 'failed',
+                    'status' => $result->isSuccess() ? "sent" : 'failed',
                     'message_id' => $result->getMessageId(),
                     'error' => $result->isSuccess() ? null : $result->getMessage()
                 ];
