@@ -2,9 +2,13 @@
 class User{
 
     public $model;
-    
+    private $db;
+    private $userUnitsTable = 'user_units';
+    private $usersTable = 'users';
+
     public function __construct(){
         $this->model = new Model();
+        $this->db = new dbFunctions();
     }
     
     public function validate(){
@@ -187,6 +191,10 @@ class User{
     public function retrieveByQuerySelector($query){
         $res = $this->model->exec_query($query);
         return $res;
+    }
+
+    public function getUnits(){
+        //
     }
     
 }

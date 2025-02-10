@@ -42,5 +42,4 @@ class SmsPurchase  {
         $res = $this->model->exec_query($query);
         return $res;
     }
-    
 }

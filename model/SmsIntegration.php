@@ -169,6 +169,21 @@ class SmsIntegration {
     
         return true;
     }
+
+    public function getUserUnitsInfo($email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+            exit;
+        }
+
+        return [
+            "status" => true,
+            "code" => 200,
+            "unit_balance" => $this->getTotalUnitsBalance($email),
+            "unit_spent" => $this->getTotalSpentUnitsQty($email)
+        ];
+    }
     
     public function checkMessageStatus($messageId) 
     {
