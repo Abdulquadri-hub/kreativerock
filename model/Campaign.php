@@ -342,6 +342,27 @@ class Campaign {
         return $campaigns ?: null;
     }
 
+    public function launchCampaign($campaignId, $email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+        }
+
+        $campaignExists = $this->db->find($this->campaignTable, "id = '$campaignId' AND user_id = '{$user['id']}' AND status = 'draft'");
+        if(!$campaignExists){
+            return ['status' => false, 'code' => 404, 'message' => 'Camapign not found.'];
+        }
+
+        $phoneNumbers = $campaignExists['phone_numbers'];
+        $requiredUnits = count((array)$phoneNumbers);
+        if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
+             return ['status' => false, 'code' => 442, 'message' => 'Insufficient SMS units. Please recharge your account'];
+             exit;
+        }
+
+        return $this->sendNow($campaignId, $email);
+    }
+
     private function validateParams($params) {
         $this->errors = [];
         
@@ -433,7 +454,6 @@ class Campaign {
             return $this->sMsCampaign($campaign, $phoneNumbers);
         }
     }
-    
  
     private function handlePrompts($campaignId, $creatorId, $prompts) {
         foreach ($prompts as $prompt) {
