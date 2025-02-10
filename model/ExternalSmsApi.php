@@ -56,7 +56,7 @@ class ExternalSmsApi {
                 return $this->jsonResponse([
                     'status' => false,
                     'code' => 442,
-                    'message' => "Insufficient SMS units",
+                    'message' => "Insufficient units",
                 ], 442);
             }
 

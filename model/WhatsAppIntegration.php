@@ -6,6 +6,7 @@ class WhatsAppIntegration {
     private $password;
     private $baseUrl;
     private $defaultConfig;
+    private $encryptor;
     
     // Response tracking
     private $lastResponse = null;
@@ -16,8 +17,13 @@ class WhatsAppIntegration {
      * 
      * @param string $userId Your API user ID
      * @param string $password Your API password
+     * @param string|null $encryptionKey Optional Gupshup encryption key
      */
-    public function __construct(string $userId = "user_id", string $password = "user_password") {
+    public function __construct(
+        string $userId = "user_id", 
+        string $password = "user_password",
+        ?string $encryptionKey = null
+    ) {
         $this->userId = $userId;
         $this->password = $password;
         $this->baseUrl = 'https://media.smsgupshup.com/GatewayAPI/rest';
@@ -30,17 +36,15 @@ class WhatsAppIntegration {
             'auth_scheme' => 'plain',
             'format' => 'json'
         ];
+
+        // Initialize encryptor if key is provided
+        if ($encryptionKey) {
+            $this->encryptor = new GupshupEncryption($encryptionKey);
+        }
     }
 
     /**
      * Send a text message to a WhatsApp number
-     * 
-     * @param string $phoneNumber Recipient's phone number
-     * @param string $message Text message content
-     * @param bool $isTemplate Whether the message is a template
-     * @param string|null $header Optional header for template messages
-     * @param string|null $footer Optional footer for template messages
-     * @return bool Success status
      */
     public function sendText(
         string $phoneNumber,
@@ -67,13 +71,6 @@ class WhatsAppIntegration {
 
     /**
      * Send a media message (image, video, or document)
-     * 
-     * @param string $phoneNumber Recipient's phone number
-     * @param string $mediaType Type of media (IMAGE, VIDEO, DOCUMENT)
-     * @param string $mediaUrl URL of the media file
-     * @param string|null $caption Optional caption for the media
-     * @param bool $isTemplate Whether the message is a template
-     * @return bool Success status
      */
     public function sendMedia(
         string $phoneNumber,
@@ -97,14 +94,6 @@ class WhatsAppIntegration {
 
     /**
      * Send an interactive message (with buttons or list)
-     * 
-     * @param string $phoneNumber Recipient's phone number
-     * @param string $message Main message content
-     * @param string $interactiveType Type of interactive message (BUTTON, LIST)
-     * @param array $action Interactive elements configuration
-     * @param string|null $header Optional header
-     * @param string|null $footer Optional footer
-     * @return bool Success status
      */
     public function sendInteractive(
         string $phoneNumber,
@@ -130,10 +119,6 @@ class WhatsAppIntegration {
 
     /**
      * Handle user consent (opt-in or opt-out)
-     * 
-     * @param string $phoneNumber User's phone number
-     * @param bool $optIn True for opt-in, false for opt-out
-     * @return bool Success status
      */
     public function handleConsent(string $phoneNumber, bool $optIn = true): bool {
         $params = array_merge($this->defaultConfig, [
@@ -147,21 +132,33 @@ class WhatsAppIntegration {
 
     /**
      * Send HTTP request to the WhatsApp API
-     * 
-     * @param array $params Request parameters
-     * @param string $method HTTP method (POST or GET)
-     * @return bool Success status
      */
     private function sendRequest(array $params, string $method = 'POST'): bool {
         $ch = curl_init();
         
         if ($method === 'GET') {
-            $url = $this->baseUrl . '?' . http_build_query($params);
+            // For GET requests, build the query string
+            $queryString = http_build_query($params);
+            
+            // If encryption is enabled, encrypt the query string
+            if ($this->encryptor) {
+                $url = $this->baseUrl . '?encrdata=' . urlencode($this->encryptor->encrypt($queryString));
+            } else {
+                $url = $this->baseUrl . '?' . $queryString;
+            }
+            
             curl_setopt($ch, CURLOPT_URL, $url);
         } else {
             curl_setopt($ch, CURLOPT_URL, $this->baseUrl);
             curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            
+            // For POST requests, handle encryption if enabled
+            if ($this->encryptor) {
+                $queryString = http_build_query($params);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, 'encrdata=' . urlencode($this->encryptor->encrypt($queryString)));
+            } else {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            }
         }
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -183,8 +180,6 @@ class WhatsAppIntegration {
 
     /**
      * Get the last API response
-     * 
-     * @return array|null Last response or null if no response
      */
     public function getLastResponse() {
         return $this->lastResponse;
@@ -192,10 +187,49 @@ class WhatsAppIntegration {
 
     /**
      * Get the last error message
-     * 
-     * @return string|null Last error message or null if no error
      */
     public function getLastError() {
         return $this->lastError;
+    }
+}
+
+class GupshupEncryption {
+    private const GCM_IV_LENGTH = 12;
+    private const GCM_TAG_LENGTH = 16;
+    private $key;
+
+    public function __construct(string $base64UrlKey) {
+        $this->key = $this->base64UrlDecode($base64UrlKey);
+    }
+
+    public function encrypt(string $data): string {
+        $iv = random_bytes(self::GCM_IV_LENGTH);
+        
+        $tag = '';
+        $ciphertext = openssl_encrypt(
+            $data,
+            'aes-256-gcm',
+            $this->key,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag,
+            "",
+            self::GCM_TAG_LENGTH
+        );
+
+        if ($ciphertext === false) {
+            throw new RuntimeException('Encryption failed: ' . openssl_error_string());
+        }
+
+        $finalBuffer = $iv . $ciphertext . $tag;
+        return $this->base64UrlEncode($finalBuffer);
+    }
+
+    private function base64UrlEncode(string $data): string {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    private function base64UrlDecode(string $data): string {
+        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 3 - (3 + strlen($data)) % 4));
     }
 }
