@@ -122,7 +122,7 @@ class ExternalSmsApi {
             ], 415);
         }
     }
-
+    
     private function getValidatedRequestBody() {
         $body = json_decode(file_get_contents('php://input'), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -146,6 +146,101 @@ class ExternalSmsApi {
 
         return $body;
     }
+
+    public function handleMessageStatusRequest() {
+        try {
+            $this->validateRequest();
+            
+            $apiKey = $this->getApiKey();
+            $userId = $this->apiKeyManager->validateApiKey($apiKey);
+            
+            if (!$userId) {
+                return $this->jsonResponse([
+                    'status' => false,
+                    'code' => 401,
+                    'message' => 'Authentication failed',
+                ], 401);
+            }
+
+            $body = $this->getValidatedStatusRequestBody();
+            $messageId = $body['message_id'];
+
+            if (!$this->verifyMessageOwnership($userId, $messageId)) {
+                return $this->jsonResponse([
+                    'status' => false,
+                    'code' => 403,
+                    'message' => 'Access denied for this message ID',
+                ], 403);
+            }
+
+            $statusResponse = $this->smsIntegration->checkMessageStatus($messageId);
+            
+            if (is_array($statusResponse)) {                
+                return $this->jsonResponse([
+                    'status' => true,
+                    'code' => 200,
+                    'data' => $statusResponse,
+                    'cached' => false
+                ], 200);
+            } else {
+                return $this->jsonResponse([
+                    'status' => false,
+                    'code' => 424,
+                    'message' => 'Failed to retrieve message status',
+                    'error' => $statusResponse
+                ], 424);
+            }
+
+        } catch (ValidationException $e) {
+            return $this->jsonResponse([
+                'status' => false,
+                'code' => 400,
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (Exception $e) {
+            error_log("Status Check Error: " . $e->getMessage());
+            return $this->jsonResponse([
+                'status' => false,
+                'code' => 500,
+                'message' => 'Internal server error',
+            ], 500);
+        }
+    }
+
+    private function getValidatedStatusRequestBody() {
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->jsonResponse([
+                'status' => false,
+                'code' => 400,
+                'message' => "Invalid JSON payload",
+            ], 400);
+        }
+
+        if (!isset($body['message_id'])) {
+            return $this->jsonResponse([
+                'status' => false,
+                'code' => 400,
+                'message' => "message_id is required",
+            ], 400);
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $body['message_id'])) {
+            return $this->jsonResponse([
+                'status' => false,
+                'code' => 400,
+                'message' => "Invalid message_id format",
+            ], 400);
+        }
+
+        return $body;
+    }
+
+    private function verifyMessageOwnership($userId, $messageId) {
+        $log = $this->db->find($this->apiLogTable,"user_id = '{$userId}' AND message_id = '{$messageId}'");
+        return !empty($log);
+    }
+
 
     private function validateAndNormalizeRecipients($recipients) {
         $recipients = is_array($recipients) ? $recipients : [$recipients];
