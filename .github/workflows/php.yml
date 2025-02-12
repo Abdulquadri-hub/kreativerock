@@ -27,3 +27,4 @@ jobs:
             model/dbclass.php
             admin/.htaccess
             .htaccess
+            .assets
