@@ -246,9 +246,9 @@ class GupshupAPI {
         return $responseData;
     }
 
-    public function uploadMedia(string $appId, string $filePath, string $fileType): array {
+    public function uploadTemplateMedia(string $appId, string $filePath, string $fileType): array {
         if (!file_exists($filePath)) {
-            throw new Exception("File not found: {$filePath}");
+            exit(badRequest(400, "File not found: {$filePath}"));
         }
 
         // Ensure we have an app token
@@ -285,7 +285,7 @@ class GupshupAPI {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if (curl_errno($ch)) {
-            throw new Exception('Curl error: ' . curl_error($ch));
+            exit(badRequest(400, 'Curl error: ' . curl_error($ch)));
         }
 
         curl_close($ch);
@@ -293,7 +293,7 @@ class GupshupAPI {
         $responseData = json_decode($response, true);
 
         if ($httpCode !== 200) {
-            throw new Exception('Failed to upload media. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+            exit(error($responseData, 442, 'Failed to upload media. HTTP Code: ' . $httpCode . '. Response: ' . $response));
         }
 
         return $responseData;
