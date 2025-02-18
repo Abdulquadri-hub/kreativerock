@@ -16,7 +16,7 @@ $template = new Template();
 $jsonInput = file_get_contents('php://input');
 $templateData = json_decode($jsonInput, true);
 
-$email = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com";
+$email = $_SESSION["elfuseremail"] ?? null;
 
 $result = $template->createTemplate($templateData, $email);
 echo success($result);
