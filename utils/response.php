@@ -22,6 +22,24 @@ function success($data, $code = 200, $message = 'success',$result='Successful')
  * Undocumented function
  *
  * @param [type] $data
+ * @param integer $code
+ * @param string $message
+ * @return void
+ */
+function error($data, $code = 500, $message = 'error',$result='Failed')
+{
+    $res['status'] = false;
+    $res['code'] = $code;
+    $res['message'] = $message;
+    $res['data'] = $data;
+    $res['result'] = $result;
+    return json_encode($res);
+}
+
+/**
+ * Undocumented function
+ *
+ * @param [type] $data
  * @param [type] $curpage
  * @param [type] $total
  * @param [type] $totalpages

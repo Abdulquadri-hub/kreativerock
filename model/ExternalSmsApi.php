@@ -89,7 +89,7 @@ class ExternalSmsApi {
             ];
             return $this->jsonResponse($response, 200);
             
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             return $this->jsonResponse([
                 'status' => false,
                 'code' => 405,
@@ -191,7 +191,7 @@ class ExternalSmsApi {
                 ], 424);
             }
 
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             return $this->jsonResponse([
                 'status' => false,
                 'code' => 400,
@@ -349,5 +349,3 @@ class ExternalSmsApi {
         exit;
     }
 }
-
-class ValidationException extends Exception {}
