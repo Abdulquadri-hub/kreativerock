@@ -299,11 +299,23 @@ class GupshupAPI {
         return $responseData;
     }
 
-
     public function editTemplate(string $appId, string $templateId, array $templateData): array {
         // Ensure we have an app token
         if (!isset($this->appTokens[$appId])) {
             $this->getAppToken($appId);
+        }
+
+        $requiredFields = [
+            'elementName',
+            'languageCode',
+            'content',
+            'category'
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (!isset($templateData[$field])) {
+                throw new Exception("Missing required field: {$field}");
+            }
         }
 
         $endpoint = "/app/{$appId}/templates/{$templateId}";
@@ -341,6 +353,49 @@ class GupshupAPI {
             throw new Exception('Failed to edit template. HTTP Code: ' . $httpCode . '. Response: ' . $response);
         }
 
+        return $responseData;
+    }
+
+    public function deleteTemplate(string $appId, string $elementName): array {
+        // Ensure we have an app token
+        if (!isset($this->appTokens[$appId])) {
+            $this->getAppToken($appId);
+        }
+    
+        $endpoint = "/app/{$appId}/template/{$elementName}";
+        $url = $this->baseUrl . $endpoint;
+    
+        // Initialize cURL session
+        $ch = curl_init();
+    
+        // Set cURL options
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => 'DELETE',
+            CURLOPT_HTTPHEADER => [
+                'accept' => 'application/json',
+                'content-type' => 'application/x-www-form-urlencoded',
+                'token: ' . $this->appTokens[$appId],
+            ]
+        ]);
+    
+        // Execute cURL request
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+        if (curl_errno($ch)) {
+            throw new Exception('Curl error: ' . curl_error($ch));
+        }
+    
+        curl_close($ch);
+    
+        $responseData = json_decode($response, true);
+    
+        if ($httpCode !== 200) {
+            throw new Exception('Failed to delete template. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+        }
+    
         return $responseData;
     }
 
@@ -590,4 +645,5 @@ class GupshupAPI {
 
         $this->db->insert('gupshup_tokens', $data);
     }
+
 }

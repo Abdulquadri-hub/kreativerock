@@ -16,6 +16,10 @@ $template = new Template();
 $jsonInput = file_get_contents('php://input');
 $templateData = json_decode($jsonInput, true);
 
+if (json_last_error() !== JSON_ERROR_NONE) {
+    exit(badRequest(204,'Invalid JSON data'));
+}
+
 $email = $_SESSION["elfuseremail"] ?? null;
 
 $result = $template->createTemplate($templateData, $email);
