@@ -28,4 +28,4 @@ require_once $rootFolder . 'model/SmsPurchase.php';
 require_once $rootFolder . 'model/SmsTransaction.php';
 require_once $rootFolder . 'model/TwoWaySms.php';
 require_once $rootFolder . 'model/ApiKeyManager.php';
-require_once $rootFolder . 'model/WhatsAppIntegration.php';
+require_once $rootFolder . 'model/SmsIntegration.php';

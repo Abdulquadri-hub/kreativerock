@@ -399,51 +399,42 @@ class GupshupAPI {
         return $responseData;
     }
 
-    public function sendTextMessage(string $appId, string $templateId, array $messageData): array {
-        // Ensure we have an app token
+    public function sendMessage(string $appId, string $templateId, array $messageData): array {
+        
         if (!isset($this->appTokens[$appId])) {
             $this->getAppToken($appId);
         }
-
-        // Required fields for sending message
+    
         $requiredFields = [
             'source',
             'destination',
+            'template',
             'src.name'
         ];
-
-        // Check for required fields
+    
         foreach ($requiredFields as $field) {
             if (!isset($messageData[$field])) {
                 throw new Exception("Missing required field: {$field}");
             }
         }
-
+    
         $endpoint = "/app/{$appId}/template/msg";
         $url = $this->baseUrl . $endpoint;
-
-        // Prepare the template data
+    
         $templateData = [
             'id' => $templateId,
             'params' => []
         ];
-
-        // Prepare the message data
-        $textMessage = [
-            'type' => 'text',
-            'text' => $messageData['text'] ?? ''
-        ];
-
-        // Combine all data
+    
+        $messageContent = $this->buildMessageContent($messageData);
+    
         $postData = array_merge($messageData, [
             'template' => json_encode($templateData),
-            'message' => json_encode($textMessage)
+            'message' => json_encode($messageContent)
         ]);
-
-        // Initialize cURL session
+    
         $ch = curl_init();
-
-        // Set cURL options
+    
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -455,23 +446,22 @@ class GupshupAPI {
                 'Content-Type: application/x-www-form-urlencoded'
             ]
         ]);
-
-        // Execute cURL request
+    
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
+    
         if (curl_errno($ch)) {
             throw new Exception('Curl error: ' . curl_error($ch));
         }
-
+    
         curl_close($ch);
-
+    
         $responseData = json_decode($response, true);
-
+    
         if ($httpCode !== 200) {
-            throw new Exception('Failed to send text message. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+            throw new Exception('Failed to send message. HTTP Code: ' . $httpCode . '. Response: ' . $response);
         }
-
+    
         return $responseData;
     }
 
@@ -493,57 +483,101 @@ class GupshupAPI {
         return $countryCode . $cleaned;
     }
 
-    public function sendVideoTemplateMessage(
-        string $appId,
-        string $templateId,
-        string $videoUrl,
-        string $source,
-        string $destination,
-        string $srcName,
-        array $params = []
-    ): array {
-        // Ensure we have an app token
-        if (!isset($this->appTokens[$appId])) {
-            $this->getAppToken($appId);
+    public function buildMessageContent(array $messageData): array {
+        if (!isset($messageData['message_type'])) {
+            throw new Exception("Message type is required");
+        }
+    
+        switch (strtolower($messageData['message_type'])) {
+            case 'text':
+                return [
+                    'type' => 'text',
+                    'text' => $messageData['text'] ?? ''
+                ];
+    
+            case 'video':
+                if (!isset($messageData['link']) || !isset($messageData['id'])) {
+                    throw new Exception("Video link and id are required for video messages");
+                }
+                return [
+                    'type' => 'video',
+                    'video' => [
+                        'link' => $messageData['link'],
+                        'id' => $messageData['id']
+                    ]
+                ];
+    
+            case 'image':
+                if (!isset($messageData['link']) || !isset($messageData['id'])) {
+                    throw new Exception("Image link and id are required for image messages");
+                }
+                return [
+                    'type' => 'image',
+                    'image' => [
+                        'link' => $messageData['link'],
+                        'id' => $messageData['id']
+                    ]
+                ];
+    
+            case 'document':
+                if (!isset($messageData['link']) || !isset($messageData['id'])) {
+                    throw new Exception("Document link and id are required for document messages");
+                }
+                return [
+                    'type' => 'document',
+                    'document' => [
+                        'link' => $messageData['link'],
+                        'id' => $messageData['id']
+                    ]
+                ];
+    
+            case 'location':
+                if (!isset($messageData['location'])) {
+                    throw new Exception("Location data is required for location messages");
+                }
+                return [
+                    'type' => 'LOCATION',
+                    'LOCATION' => $messageData['location']
+                ];
+    
+            default:
+                throw new Exception("Unsupported message type: {$messageData['type']}");
+        }
+    }
+
+    public function createApp(array $appData): array {
+        if (!$this->token) {
+            throw new Exception('Partner token not available. Please generate token first.');
         }
 
-        $endpoint = "/app/{$appId}/template/msg";
+        $endpoint = '/app';
         $url = $this->baseUrl . $endpoint;
 
-        // Prepare video message data
-        $messageData = [
-            'message' => json_encode([
-                'type' => 'VIDEO',
-                'video' => [
-                    'link' => $videoUrl
-                ]
-            ]),
-            'source' => $source,
-            'destination' => $destination,
-            'src.name' => $srcName,
-            'template' => json_encode([
-                'id' => $templateId,
-                'params' => $params
-            ])
-        ];
+        // Validate required fields
+        $requiredFields = ['name'];
+        foreach ($requiredFields as $field) {
+            if (!isset($appData[$field])) {
+                throw new Exception("Missing required field: {$field}");
+            }
+        }
 
-        // Initialize cURL session
+        // Set optional fields with defaults
+        $appData['templateMessaging'] = $appData['templateMessaging'] ?? false;
+        $appData['disableOptinPrefUrl'] = $appData['disableOptinPrefUrl'] ?? false;
+
         $ch = curl_init();
 
-        // Set cURL options
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query($messageData),
+            CURLOPT_POSTFIELDS => http_build_query($appData),
             CURLOPT_HTTPHEADER => [
-                'Authorization: ' . $this->appTokens[$appId],
                 'Content-Type: application/x-www-form-urlencoded',
-                'Accept: application/json'
+                'token: ' . $this->token
             ]
         ]);
 
-        // Execute cURL request
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
@@ -556,62 +590,39 @@ class GupshupAPI {
         $responseData = json_decode($response, true);
 
         if ($httpCode !== 200) {
-            throw new Exception('Failed to send video message. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+            throw new Exception('Failed to create app. HTTP Code: ' . $httpCode . '. Response: ' . $response);
         }
 
         return $responseData;
     }
 
-    public function sendCustomVideoMessage(string $appId, array $messageData): array {
-        // Ensure we have an app token
-        if (!isset($this->appTokens[$appId])) {
-            $this->getAppToken($appId);
+    public function updateApp(string $appId, array $appData): array {
+        if (!$this->token) {
+            throw new Exception('Partner token not available. Please generate token first.');
         }
 
-        // Required fields for video message
-        $requiredFields = [
-            'source',
-            'destination',
-            'template',
-            'src.name',
-            'message'
-        ];
-
-        // Check for required fields
-        foreach ($requiredFields as $field) {
-            if (!isset($messageData[$field])) {
-                throw new Exception("Missing required field: {$field}");
-            }
-        }
-
-        $endpoint = "/app/{$appId}/template/msg";
+        $endpoint = "/app/{$appId}";
         $url = $this->baseUrl . $endpoint;
 
-        // Ensure message and template are properly formatted JSON if they're arrays
-        if (is_array($messageData['message'])) {
-            $messageData['message'] = json_encode($messageData['message']);
-        }
-        if (is_array($messageData['template'])) {
-            $messageData['template'] = json_encode($messageData['template']);
+        // Validate storageRegion if provided
+        $validRegions = ['BR', 'DE', 'CH', 'GB', 'BH', 'ZA', 'AE', 'US', 'CA', 'AU', 'ID', 'IN', 'JP', 'SG', 'KR'];
+        if (isset($appData['storageRegion']) && !in_array($appData['storageRegion'], $validRegions)) {
+            throw new Exception('Invalid storage region provided');
         }
 
-        // Initialize cURL session
         $ch = curl_init();
 
-        // Set cURL options
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query($messageData),
+            CURLOPT_CUSTOMREQUEST => 'PUT',
+            CURLOPT_POSTFIELDS => http_build_query($appData),
             CURLOPT_HTTPHEADER => [
-                'Authorization: ' . $this->appTokens[$appId],
                 'Content-Type: application/x-www-form-urlencoded',
-                'Accept: application/json'
+                'token: ' . $this->token
             ]
         ]);
 
-        // Execute cURL request
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
@@ -624,7 +635,100 @@ class GupshupAPI {
         $responseData = json_decode($response, true);
 
         if ($httpCode !== 200) {
-            throw new Exception('Failed to send video message. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+            throw new Exception('Failed to update app. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+        }
+
+        return $responseData;
+    }
+
+    public function getAppDetails(string $appId): array {
+        if (!$this->token) {
+            throw new Exception('Partner token not available. Please generate token first.');
+        }
+
+        $endpoint = "/app/{$appId}/details";
+        $url = $this->baseUrl . $endpoint;
+
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_HTTPHEADER => [
+                'token: ' . $this->token
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            throw new Exception('Curl error: ' . curl_error($ch));
+        }
+
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode !== 200) {
+            throw new Exception('Failed to get app details. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+        }
+
+        return $responseData;
+    }
+
+    public function listApps(?array $filters = []): array {
+        if (!$this->token) {
+            throw new Exception('Partner token not available. Please generate token first.');
+        }
+
+        $endpoint = '/app/list';
+        $url = $this->baseUrl . $endpoint;
+
+        // Add optional query parameters
+        $queryParams = [];
+        if (isset($filters['name'])) {
+            $queryParams['name'] = $filters['name'];
+        }
+        if (isset($filters['phone'])) {
+            $queryParams['phone'] = $filters['phone'];
+        }
+        if (isset($filters['pageNo'])) {
+            $queryParams['pageNo'] = $filters['pageNo'];
+        }
+        if (isset($filters['pageSize'])) {
+            $queryParams['pageSize'] = $filters['pageSize'];
+        }
+
+        if (!empty($queryParams)) {
+            $url .= '?' . http_build_query($queryParams);
+        }
+
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_HTTPHEADER => [
+                'token: ' . $this->token
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            throw new Exception('Curl error: ' . curl_error($ch));
+        }
+
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode !== 200) {
+            throw new Exception('Failed to list apps. HTTP Code: ' . $httpCode . '. Response: ' . $response);
         }
 
         return $responseData;

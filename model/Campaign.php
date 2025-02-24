@@ -1,9 +1,5 @@
 <?php
 
-require_once 'WhatsAppIntegration.php';
-require_once 'SmsIntegration.php';
-require_once 'Conversation.php';
-
 class Campaign {
     private $db;
     private $smsIntegration;
@@ -20,7 +16,7 @@ class Campaign {
     public function __construct() {
         $this->db = new dbFunctions();
         $this->smsIntegration = new SmsIntegration();
-        $this->whatsappIntegration = new WhatsAppIntegration();
+        $this->whatsappIntegration = new GupshupAPI();
         $this->conversation = new Conversation();
     }
 
@@ -543,65 +539,105 @@ class Campaign {
     }
 
     private function whatsAppCampaign($campaign, $phoneNumbers) {
+
         $responses = [];
         $conversationId = null;
-
+    
         if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
             $conversationId = $this->conversation->startConversation($campaign['id']);
         }
-
+    
+        // Prepare base message data
+        $baseMessageData = [
+            'source' => $campaign['source'] ?? 'default_source',
+            'src.name' => $campaign['src_name'] ?? 'Your Company Name',
+            'template' => json_encode([
+                'id' => $campaign['template_id'],
+                'params' => json_decode($campaign['template_params'], true) ?? []
+            ])
+        ];
+    
         foreach ($phoneNumbers as $phoneNumber) {
-            $result = false;
+            $messageData = array_merge($baseMessageData, [
+                'destination' => $phoneNumber
+            ]);
 
-            switch ($campaign['message_type']) {
-                case 'text':
-                    $result = $this->whatsappIntegration->sendText(
-                        $phoneNumber,
-                        $campaign['message']
-                    );
-                    break;
-
-                case 'media':
-                    $result = $this->whatsappIntegration->sendMedia(
-                        $phoneNumber,
-                        $campaign['media_type'],
-                        $campaign['media_url'],
-                        $campaign['media_caption']
-                    );
-                    break;
-
-                case 'interactive':
-                    $interactiveData = json_decode($campaign['interactive_data'], true);
-                    $result = $this->whatsappIntegration->sendInteractive(
-                        $phoneNumber,
-                        $campaign['message'],
-                        $interactiveData['type'],
-                        $interactiveData['action']
-                    );
-                    break;
+            //handle message type
+            $this->whatsappIntegration->buildMessageContent($campaign);
+    
+            try {
+                // Send message through Gupshup
+                $result = $this->whatsappIntegration->sendMessage(
+                    $campaign['app_id'],
+                    $campaign['template_id'],
+                    $messageData
+                );
+    
+                $messageId = $this->saveWhatsappMessage([
+                    'user_id' => $campaign['user_id'],
+                    'campaign_id' => $campaign['id'],
+                    'conversation_id' => $conversationId,
+                    'destination' => $phoneNumber,
+                    'message_type' => $campaign['message_type'],
+                    'direction' => 'outgoing',
+                    'content' => $campaign['message'],
+                    'template_id' => $campaign['template_id'],
+                    'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
+                    'gush_message_id' => $result['messageId'] ?? null,
+                    'gush_response' => json_encode($result),
+                    'message_status' => $result['status']
+                ]);
+    
+                $responses[] = [
+                    'phone' => $phoneNumber,
+                    'status' => $result['status'],
+                    'message_id' => $messageId,
+                    'campaign_id' => $campaign['id'],
+                    'gush_message_id' => $result['messageId'] ?? null
+                ];
+    
+            } catch (Exception $e) {
+                
+                $messageId = $this->saveWhatsappMessage([
+                    'user_id' => $campaign['user_id'],
+                    'campaign_id' => $campaign['id'],
+                    'conversation_id' => $conversationId,
+                    'destination' => $phoneNumber,
+                    'message_type' => $campaign['message_type'],
+                    'direction' => 'outgoing',
+                    'content' => $campaign['message'],
+                    'template_id' => $campaign['template_id'],
+                    'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
+                    'error' => $e->getMessage(),
+                    'message_status' => 'failed'
+                ]);
+    
+                $responses[] = [
+                    'phone' => $phoneNumber,
+                    'status' => 'failed',
+                    'message_id' => $messageId,
+                    'campaign_id' => $campaign['id'],
+                    'error' => $e->getMessage()
+                ];
             }
-
-            $this->saveMessage($campaign['user_id'],$phoneNumber,$campaign,$conversationId,
-                (object)[
-                    'isSuccess' => function() use ($result) { return $result; },
-                    'getMessageId' => function() { return uniqid('wa_'); },
-                    'getMessage' => function() { return null; }
-                ]
-            );
-
-            $responses[] = [
-                'phone' => $phoneNumber,
-                'status' => $result ? 'sent' : 'failed',
-                'campaign_id' => $campaign['id']
-            ];
         }
-
-        $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
-
+    
+        // Update campaign status
+        $this->db->update(
+            $this->campaignTable, 
+            ['status' => 'completed'], 
+            "id = '{$campaign['id']}'"
+        );
+    
         return [
             'status' => true,
-            'message' => 'WhatsApp campaign sent successfully',
+            'message' => 'WhatsApp campaign completed',
             'data' => $responses
         ];
+    }
+    
+    // Updated saveMessage method to handle new fields
+    private function saveWhatsappMessage($messageData) {
+        return $this->db->insert($this->messagesTable, $messageData);
     }
 }
