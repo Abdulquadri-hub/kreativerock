@@ -162,11 +162,16 @@ class GupshupAPI {
             }
         }
 
-        $templateData['appId'] = $appId;
-
         $templateData['templateType'] = $templateData['templateType'] ?? 'TEXT';
         $templateData['enableSample'] = $templateData['enableSample'] ?? 'true';
         $templateData['allowTemplateCategoryChange'] = $templateData['allowTemplateCategoryChange'] ?? 'false';
+
+        if (isset($templateData['buttons']) && is_array($templateData['buttons'])) {
+            $templateData['buttons'] = json_encode($templateData['buttons']);
+        }
+        else{
+            unset($templateData['buttons']);
+        }
 
         $ch = curl_init();
 

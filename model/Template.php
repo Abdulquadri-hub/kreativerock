@@ -287,17 +287,18 @@ class Template {
     private function normalizeTemplateData(array $rawData, string $appId): array {
         $rawData['elementname'] = str_replace(" ", "_", strtolower($rawData['elementname']));
         return [
-            'elementName' => $rawData['elementname'] ?? null,
+            'elementName' => $rawData['elementname'] ?? "",
             'languageCode' => $rawData['languagecode'] ?? 'en',
-            'content' => $rawData['content'] ?? null,
-            'footer' => $rawData['footer'] ?? null,
             'category' => $rawData['category'] ?? 'MARKETING',
             'templateType' => $rawData['templatetype'] ?? 'TEXT',
             'vertical' => $rawData['vertical'] ?? null,
+            'content' => $rawData['content'] ?? null,
+            'header' => $rawData['header'] ?? null,
+            'footer' => $rawData['footer'] ?? null,
             'example' => $rawData['example'] ?? null,
+            'buttons' => $rawData['buttons'] ?? null, 
             'enableSample' => $rawData['enableSample'] ?? 'true',
             'allowTemplateCategoryChange' => $rawData['allowTemplateCategoryChange'] ?? 'false',
-            'appId' => $appId
         ];
     }
 
