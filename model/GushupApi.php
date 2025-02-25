@@ -1,12 +1,12 @@
 <?php
 
 class GupshupAPI {
-    private string $baseUrl = 'https://partner.gupshup.io/partner';
-    private string $email;
-    private string $password;
-    private ?string $token = null;
-    private array $appTokens = [];
-    private string $currentAppId = "1e1b0a92-6a16-4e29-b738-da3a245f24df";
+    private $baseUrl = 'https://partner.gupshup.io/partner';
+    private $email;
+    private $password;
+    private $token = null;
+    private $appTokens = [];
+    private $currentAppId = "1e1b0a92-6a16-4e29-b738-da3a245f24df";
     private $db;
 
     public function __construct($email = "info@kreativerock.com", $password = "123456789Ab####", bool $autoLogin = true) {
