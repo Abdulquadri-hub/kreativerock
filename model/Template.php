@@ -286,6 +286,7 @@ class Template {
 
     private function normalizeTemplateData(array $rawData, string $appId): array {
         $rawData['elementname'] = str_replace(" ", "_", strtolower($rawData['elementname']));
+        echo $rawData['elementname'] ;
         return [
             'elementName' => $rawData['elementname'] ?? null,
             'languageCode' => $rawData['languagecode'] ?? 'en',
