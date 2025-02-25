@@ -404,12 +404,12 @@ class Template {
         }
         
         // Boolean validations
-        $booleanFields = ['enableSample', 'allowTemplateCategoryChange', 'addSecurityRecommendation'];
-        foreach ($booleanFields as $field) {
-            if (isset($data[$field]) && !is_bool($data[$field])) {
-                $errors[] = "{$field} must be a boolean value";
-            }
-        }
+        // $booleanFields = ['enableSample', 'allowTemplateCategoryChange', 'addSecurityRecommendation'];
+        // foreach ($booleanFields as $field) {
+        //     if (isset($data[$field]) && !is_bool($data[$field])) {
+        //         $errors[] = "{$field} must be a boolean value";
+        //     }
+        // }
         
         return $errors;
     }
