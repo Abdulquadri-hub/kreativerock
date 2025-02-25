@@ -545,6 +545,8 @@ class GupshupAPI {
         }
     }
 
+    // Onbaording Partner Apis
+
     public function createApp(array $appData): array {
         if (!$this->token) {
             throw new Exception('Partner token not available. Please generate token first.');

@@ -40,7 +40,6 @@ class Template {
             $response = $this->gupshupApi->createTemplate($appId, $mappedData);
 
             if ($response['status'] === 'success') {
-                echo "here";
                 $dbData = $this->prepareDbData($response, $mappedData, $user['id']);
                 $this->db->insert($this->templatesTable, $dbData);
                 return array_merge($response, ['local_data' => $dbData]);
