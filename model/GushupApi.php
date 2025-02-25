@@ -176,9 +176,9 @@ class GupshupAPI {
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($templateData),
             CURLOPT_HTTPHEADER => [
-                'Accept: application/json',
-                'Content-Type: application/x-www-form-urlencoded',
-                'Authorization: ' . $this->appTokens[$appId]
+                'accept: application/json',
+                'content-type: application/x-www-form-urlencoded',
+                'token: ' . $this->appTokens[$appId]
             ]
         ]);
 
