@@ -497,7 +497,7 @@ class GupshupAPI {
             case 'text':
                 return [
                     'type' => 'text',
-                    'text' => $messageData['text'] ?? ''
+                    'text' => $messageData['message'] ?? ''
                 ];
     
             case 'video':
@@ -507,8 +507,8 @@ class GupshupAPI {
                 return [
                     'type' => 'video',
                     'video' => [
-                        'link' => $messageData['link'],
-                        'id' => $messageData['id']
+                        'link' => $messageData['media_url'],
+                        'id' => $messageData['media_id']
                     ]
                 ];
     
@@ -519,8 +519,8 @@ class GupshupAPI {
                 return [
                     'type' => 'image',
                     'image' => [
-                        'link' => $messageData['link'],
-                        'id' => $messageData['id']
+                        'link' => $messageData['media_url'],
+                        'id' => $messageData['media_id']
                     ]
                 ];
     
@@ -531,8 +531,8 @@ class GupshupAPI {
                 return [
                     'type' => 'document',
                     'document' => [
-                        'link' => $messageData['link'],
-                        'id' => $messageData['id']
+                        'link' => $messageData['media_url'],
+                        'id' => $messageData['media_id']
                     ]
                 ];
     
@@ -542,7 +542,7 @@ class GupshupAPI {
                 }
                 return [
                     'type' => 'LOCATION',
-                    'LOCATION' => $messageData['location']
+                    'LOCATION' => $messageData['location_data']
                 ];
     
             default:

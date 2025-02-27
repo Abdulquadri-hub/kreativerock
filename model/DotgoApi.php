@@ -223,7 +223,6 @@ class DotgoApi  {
         return $this->getMessageStatus($messageId);
     }
     
-    
     private function getAccessToken() 
     {
         if($this->iSTokenValid()) 

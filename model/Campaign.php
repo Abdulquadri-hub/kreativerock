@@ -123,8 +123,7 @@ class Campaign {
             'response_handling' => $params['responsehandling'] ?? 'manual',
             'message_type' => $params['message_type'] ?? 'text', // text, media, interactive
             'media_url' => $params['media_url'] ?? null,
-            'media_caption' => $params['media_caption'] ?? null,
-            'interactive_data' => isset($params['interactive_data']) ? json_encode($params['interactive_data']) : null
+            'media_id' => $params['media_caption'] ?? null
         ];
         
         $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}' AND status = 'draft'");
@@ -141,7 +140,7 @@ class Campaign {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
             if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
-                // $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+                $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
             }
 
             if(!empty($campaignId)){
@@ -238,7 +237,7 @@ class Campaign {
     
         if ($updated) {
             if ($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated") {
-                // $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+                $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
             }
     
             // if ($params['scheduled'] === 'NOW') {
@@ -409,23 +408,25 @@ class Campaign {
         if ($params['channel'] === 'whatsapp') {
             if (isset($params['message_type'])) {
                 switch ($params['message_type']) {
-                    case 'media':
+                    case 'video':
                         if (empty($params['media_url'])) {
                             $this->errors['media_url'] = 'Media URL is required for media messages';
                         }
                         break;
-                    case 'interactive':
-                        if (empty($params['interactive_data'])) {
-                            $this->errors['interactive_data'] = 'Interactive data is required for interactive messages';
+                    case 'image':
+                        if (empty($params['media_url'])) {
+                            $this->errors['media_url'] = 'Media URL is required for media messages';
                         }
                         break;
                 }
             }
         }
 
-        // if($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated"){
-        //     if(!isset() || empty($params['prompts']['']));
-        // }
+        if($params['campaigntype'] === "promotional" && $params['responsehandling'] === "automated"){
+            if(!isset($params['prompts']) || empty($params['prompts'])){
+                $this->errors['prompts'] = 'prompts data is required for interactive messages';
+            }
+        }
         
         return empty($this->errors);
     }
@@ -450,30 +451,45 @@ class Campaign {
             return $this->sMsCampaign($campaign, $phoneNumbers);
         }
     }
- 
+
+
     private function handlePrompts($campaignId, $creatorId, $prompts) {
+        
+        $currentSequence = 0;
+    
         foreach ($prompts as $prompt) {
+            $currentSequence++; // Increment sequence for each prompt
+    
             $promptData = [
                 'campaign_id' => $campaignId,
                 'user_id' => $creatorId,
                 'message_text' => $prompt['prompt'],
-                'response_type' => $this->mapResponseType($prompt['responsetype']),
+                'response_type' => $prompt['responsetype'], // 'keyword' or 'full_text'
+                'sequence_order' => $currentSequence,
                 'response_value' => $prompt['response'],
-                'next_prompt_id' => $prompt['nextpromtid'] ?? null,
-                'parent_prompt_id' => $prompt['parentpromptid'] ?? null,
                 'is_end_prompt' => isset($prompt['isendprompt']) ? $prompt['isendprompt'] : 0
             ];
 
-            $existingPrompt = $this->db->find($this->conversationPromtsTable,"campaign_id = '$campaignId' AND message_text = '{$prompt['prompt']}' AND response_type = '{$this->mapResponseType($prompt['responsetype'])}'");
-            
+            if ($prompt['responsetype'] === 'keyword') {
+                $promptData['response_value'] = json_encode([
+                    'keyword' => $prompt['keyword'],
+                    'response' => $prompt['response']
+                ]);
+            }
+
+            $existingPrompt = $this->db->find($this->conversationPromtsTable,
+                "campaign_id = '$campaignId' AND sequence_order = '$currentSequence' AND user_id = '$creatorId'"
+            );
+    
             if ($existingPrompt) {
                 $this->db->update($this->conversationPromtsTable,$promptData,"id = '{$existingPrompt['id']}'");
-                $this->updatePromptReferences($existingPrompt['id'], $promptData['next_prompt_id']);
-            } else {
+            } 
+            else {
                 $promptId = $this->db->insert($this->conversationPromtsTable, $promptData);
-                
-                if (!isset($prompt['parentpromptid'])) {
-                    $this->conversation->startConversation($campaignId, $promptId);
+    
+                // If this is the first prompt in sequence, start the conversation
+                if ($currentSequence === 1) {
+                    $this->conversation->startConversation($campaignId, null);
                 }
             }
         }
@@ -546,11 +562,11 @@ class Campaign {
         if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
             $conversationId = $this->conversation->startConversation($campaign['id']);
         }
-    
+
         // Prepare base message data
         $baseMessageData = [
-            'source' => $campaign['source'] ?? 'default_source',
-            'src.name' => $campaign['src_name'] ?? 'Your Company Name',
+            'source' => $campaign['source'] ?? null,
+            'src.name' => $campaign['src_name'] ?? null,
             'template' => json_encode([
                 'id' => $campaign['template_id'],
                 'params' => json_decode($campaign['template_params'], true) ?? []
@@ -609,7 +625,7 @@ class Campaign {
                     'template_id' => $campaign['template_id'],
                     'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
                     'error' => $e->getMessage(),
-                    'message_status' => 'failed'
+                    'status' => 'failed'
                 ]);
     
                 $responses[] = [

@@ -76,6 +76,7 @@ function successMessage($code = 200, $message = 'success')
 
 function message($code = 200, $type = "true",  $message)
 {
+    $res = [];
     if($type == "false")
     {
         $res['status'] = false;
