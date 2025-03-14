@@ -452,7 +452,6 @@ class Campaign {
         }
     }
 
-
     private function handlePrompts($campaignId, $creatorId, $prompts) {
         
         $currentSequence = 0;
@@ -508,21 +507,6 @@ class Campaign {
             'rcs_message_id' => $result->getMessageId(),
             'error' => $result->isSuccess() ? null : $result->getMessage()
         ]);
-    }
-
-    private function updatePromptReferences($promptId, $newNextpromptId) {
-        $this->db->update($this->conversationPromtsTable,['next_prompt_id' => $newNextpromptId],"next_prompt_id = '{$promptId}'");
-    }
-
-    private function mapResponseType($oldType) {
-        $typeMap = [
-            'text' => 'text',
-            'keyword' => 'keyword',
-            'options' => 'options',
-            // Add more mappings as needed
-        ];
-        
-        return $typeMap[$oldType] ?? 'text';
     }
 
     private function sMsCampaign($campaign, $phoneNumbers) {
@@ -657,3 +641,19 @@ class Campaign {
         return $this->db->insert($this->messagesTable, $messageData);
     }
 }
+
+
+// private function updatePromptReferences($promptId, $newNextpromptId) {
+//     $this->db->update($this->conversationPromtsTable,['next_prompt_id' => $newNextpromptId],"next_prompt_id = '{$promptId}'");
+// }
+
+// private function mapResponseType($oldType) {
+//     $typeMap = [
+//         'text' => 'text',
+//         'keyword' => 'keyword',
+//         'options' => 'options',
+//         // Add more mappings as needed
+//     ];
+    
+//     return $typeMap[$oldType] ?? 'text';
+// }

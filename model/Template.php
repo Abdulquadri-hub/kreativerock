@@ -38,7 +38,7 @@ class Template {
             }
 
             $response = $this->gupshupApi->createTemplate($appId, $mappedData);
-
+            
             if ($response['status'] === 'success') {
                 $dbData = $this->prepareDbData($response, $mappedData, $user['id']);
                 $this->db->insert($this->templatesTable, $dbData);
@@ -147,7 +147,7 @@ class Template {
 
             // Fetch from Gupshup
             $gupshupTemplates = $this->gupshupApi->getTemplates($appId);
-            
+            return $gupshupTemplates;
             // Build WHERE clause for local database
             $whereConditions = ["app_id = '" . $this->db->escape($appId) . "'"];
             
@@ -159,6 +159,9 @@ class Template {
             }
             if (!empty($filters['category'])) {
                 $whereConditions[] = "category = '" . $this->db->escape($filters['category']) . "'";
+            }
+            if (!empty($filters['template_id'])) {
+                $whereConditions[] = "template_id = '" . $this->db->escape($filters['template_id']) . "'";
             }
             
             $where = implode(' AND ', $whereConditions);
@@ -287,6 +290,7 @@ class Template {
     private function normalizeTemplateData(array $rawData, string $appId): array {
         $rawData['elementname'] = str_replace(" ", "_", strtolower($rawData['elementname']));
         return [
+            'appId' => $appId ?? "",
             'elementName' => $rawData['elementname'] ?? "",
             'languageCode' => $rawData['languagecode'] ?? 'en',
             'category' => $rawData['category'] ?? 'MARKETING',
@@ -307,10 +311,12 @@ class Template {
             'template_id' => $response['template']['id'],
             'template_type' => $response['template']['templateType'],
             'template_name' => $mappedData['elementName'],
+            'namespace' => $response['template']['namespace'],
+            'containerMeta' => $response['template']['containerMeta'],
             'category' => $mappedData['category'],
             'content' => $mappedData['content'],
             'language' => $mappedData['languageCode'],
-            'status' => $response['status'] ?? 'PENDING',
+            'status' => $response['template']['status'] ?? 'PENDING',
             'user_id' => $userId,
             'app_id' => $mappedData['appId'],
             'created_at' => date('Y-m-d H:i:s'),
