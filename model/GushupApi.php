@@ -140,6 +140,12 @@ class GupshupAPI {
         $this->currentAppId = $appId;
     }
 
+    public function getToken(): ?string {
+        return $this->token;
+    }
+
+    /* Templates */
+
     public function createTemplate(string $appId, array $templateData): array {
 
         if (!isset($this->appTokens[$appId])) {
@@ -204,10 +210,6 @@ class GupshupAPI {
         }
 
         return $responseData;
-    }
-
-    public function getToken(): ?string {
-        return $this->token;
     }
 
     public function getTemplates(string $appId): array {
@@ -405,6 +407,8 @@ class GupshupAPI {
         return $responseData;
     }
 
+    /* Messaging */
+
     public function sendMessage(string $appId, string $templateId, array $messageData): array {
         
         if (!isset($this->appTokens[$appId])) {
@@ -549,6 +553,84 @@ class GupshupAPI {
             default:
                 throw new Exception("Unsupported message type: {$messageData['type']}");
         }
+    }
+
+    /* Set callbackUrl Subscription */
+
+    public function setSubscription(string $appId, array $subscriptionData): array{
+        if (!isset($this->appTokens[$appId])) {
+            $this->getAppToken($appId);
+        }
+
+        $requiredFields = [
+            'modes',
+            'tag',
+            'url',
+            'version'
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (!isset($subscriptionData[$field])) {
+                throw new Exception("Missing required field: {$field}");
+            }
+        }
+
+        $validModes = ['SENT', 'DELIVERED', 'READ', 'FAILED', 'OTHERS', 'PAYMENTS', 
+                      'MESSAGE', 'BILLING', 'FLOWS_MESSAGE', 'TEMPLATE', 'ACCOUNT', 'ENQUEUED'];
+        
+        $modes = explode(',', $subscriptionData['modes']);
+        foreach ($modes as $mode) {
+            if (!in_array(trim($mode), $validModes)) {
+                throw new Exception("Invalid mode: {$mode}. Must be one of: " . implode(', ', $validModes));
+            }
+        }
+
+        if (!in_array($subscriptionData['version'], ['2', '3'], true)) {
+            throw new Exception("Invalid version. Must be one of: 2, 3");
+        }
+
+        $endpoint = "/app/{$appId}/subscription";
+        $url = $this->baseUrl . $endpoint;
+
+        $subscriptionData['showOnUI'] = $subscriptionData['showOnUI'] ?? 'false';
+
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($subscriptionData),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: ' . $this->appTokens[$appId],
+                'Content-Type: application/x-www-form-urlencoded'
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            throw new Exception('Curl error: ' . curl_error($ch));
+        }
+
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode !== 200) {
+            throw new Exception('Failed to set subscription. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+        }
+
+        return $responseData;
+    }
+
+    public function deleteSpecificiSubscription(){
+        //
+    }
+
+    public function deleteAllSubscription(){
+        //
     }
 
     // Onbaording Partner Apis

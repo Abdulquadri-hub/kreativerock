@@ -109,12 +109,24 @@ class Campaign {
             ];
         }
 
+        if($params['channel'] === "whatsapp"){
+            $appId = $appId ?? $this->whatsappIntegration->getCurrentAppId();
+            if (empty($appId)) {
+                exit(badRequest(400, 'Invalid app ID'));
+            }
+        }
+
         $campaignData = [
             'user_id' => $user['id'],
             "channel" =>  $params['channel'],
             'name' => $params['campaignname'],
             'type' => $params['campaigntype'],
             'message' => $params['campaignmessage'],
+            'source' => $params['source'] ?? null,
+            'src_name' => $params['srcname'] ?? null,
+            'template_id' => $params['template_id'] ?? null,
+            'template_params' => json_encode($params['template_params']) ?? null,
+            'app_id' => $appId ?? null,
             'phone_numbers' => json_encode($phoneNumbers),
             'sms_pages' => $params['smspages'],
             'status' => 'draft',
@@ -128,15 +140,16 @@ class Campaign {
         
         $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}' AND status = 'draft'");
 
-        if ($existingCampaign) {
-            $campaignId = $existingCampaign['id'];
-            $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
-            return [
-                'status' => true,
-                'message' => 'Campaign is saved as draft and not sent',
-                'campaign_id' => $campaignId,
-            ];
-        } else {
+        // if ($existingCampaign) {
+        //     $campaignId = $existingCampaign['id'];
+        //     $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
+        //     return [
+        //         'status' => true,
+        //         'message' => 'Campaign is saved as draft and not sent',
+        //         'campaign_id' => $campaignId,
+        //     ];
+        // } else 
+        {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
             if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
@@ -406,6 +419,7 @@ class Campaign {
         }
 
         if ($params['channel'] === 'whatsapp') {
+            
             if (isset($params['message_type'])) {
                 switch ($params['message_type']) {
                     case 'video':
@@ -419,6 +433,22 @@ class Campaign {
                         }
                         break;
                 }
+            }
+
+            if(empty($params['template_id']) || $params['template_id'] === ""){
+                $this->errors['template_id'] = 'Template id is required';
+            }
+
+            if(empty($params['srcname']) || $params['srcname'] === ""){
+                $this->errors['srcname'] = 'Source name is required';
+            }
+
+            if(empty($params['source']) || $params['source'] === ""){
+                $this->errors['source'] = 'Source number is required';
+            }
+
+            if(empty($params['template_params']) || $params['template_params'] === ""){
+                $this->errors['template_params'] = 'template params number is required';
             }
         }
 
@@ -556,15 +586,15 @@ class Campaign {
                 'params' => json_decode($campaign['template_params'], true) ?? []
             ])
         ];
-    
+        
         foreach ($phoneNumbers as $phoneNumber) {
             $messageData = array_merge($baseMessageData, [
                 'destination' => $phoneNumber
             ]);
 
             //handle message type
-            $this->whatsappIntegration->buildMessageContent($campaign);
-    
+            $rst = $this->whatsappIntegration->buildMessageContent($campaign);
+            return $rst;
             try {
                 // Send message through Gupshup
                 $result = $this->whatsappIntegration->sendMessage(

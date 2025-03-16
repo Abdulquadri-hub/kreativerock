@@ -118,7 +118,8 @@ class SmsIntegration {
         }
         else{
             if($unit['total_used_qty'] == 0){
-                return $this->getTotalPurchasedUnitsQty($email);
+                // return $this->getTotalPurchasedUnitsQty($email);
+                return $unit['total_unit_balance'];
             }
             else{
                 return $unit['total_unit_balance'];
