@@ -14,5 +14,5 @@ $template = new Template();
 
 $email = $_SESSION["elfuseremail"] ?? null;
 
-$result = $template->getTemplates(null, $_REQUEST);
+$result = $template->getTemplates(null, $_REQUEST, $email);
 echo success($result);

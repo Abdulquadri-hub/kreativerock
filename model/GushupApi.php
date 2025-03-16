@@ -153,6 +153,7 @@ class GupshupAPI {
             'elementName',
             'languageCode',
             'content',
+            'vertical',
             'category'
         ];
 

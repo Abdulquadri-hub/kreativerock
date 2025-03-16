@@ -20,7 +20,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     exit(badRequest(204,'Invalid JSON data'));
 }
 
-$email = $_SESSION["elfuseremail"] ?? NULL;
+$email = $_SESSION["elfuseremail"] ?? null;
 
 $result = $template->updateTemplate($templateData['template_id'],$email, $templateData);
 echo success($result);

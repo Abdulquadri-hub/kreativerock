@@ -64,7 +64,6 @@ class Template {
                 exit(badRequest(400, 'Template ID is required'));
             }
 
-            // Verify template exists
             $existingTemplate = $this->getTemplate($templateId);
             if (!$existingTemplate) {
                 exit(badRequest(404, 'Template not found'));
@@ -75,24 +74,24 @@ class Template {
                 exit(badRequest(400, 'Invalid app ID'));
             }
 
-            // Normalize and validate template data
-            $mappedData = $this->normalizeTemplateData($templateData, $appId);
+            $mappedData = $this->normalizeTemplateData($templateData, $appId, $existingTemplate);
+            
             $validationErrors = $this->validateTemplate($mappedData);
             if (!empty($validationErrors)) {
                 exit(validationError(401, $validationErrors));
             }
 
-            // Update template on Gupshup
             $response = $this->gupshupApi->editTemplate($appId, $templateId, $mappedData);
             if ($response['status'] !== 'success') {
                 exit(badRequest(500, 'Failed to update template on Gupshup'));
             }
 
-            // Update local database
-            $dbData = $this->prepareDbData($response, $mappedData, $existingTemplate['user_id']);
+            $isEditdata = true;
+            $dbData = $this->prepareDbData($response, $mappedData, $existingTemplate['user_id'], $isEditdata);
             $dbData['updated_at'] = date('Y-m-d H:i:s');
+            $template_id =  $this->db->escape($templateId);
             
-            $where = "template_id = '" . $this->db->escape($templateId) . "'";
+            $where = "template_id = '$template_id' AND user_id = '{$existingTemplate['user_id']}'";
             $this->db->update($this->templatesTable, $dbData, $where);
 
             return array_merge($response, ['local_data' => $dbData]);
@@ -101,7 +100,7 @@ class Template {
         }
     }
 
-    public function deleteTemplate(string $templateId): array {
+    public function deleteTemplate(string $templateId) {
         try {
             if (empty($templateId)) {
                 exit(badRequest(400, 'Template ID is required'));
@@ -138,8 +137,14 @@ class Template {
         }
     }
 
-    public function getTemplates(?string $appId = null, array $filters = []): array {
+    public function getTemplates(?string $appId = null, array $filters = [], $email) {
         try {
+            $email =  $this->db->escape($email);
+            $user = $this->db->find($this->usersTable, "email = '$email'");
+            if (!$user) {
+                exit(badRequest(400, 'User not found'));
+            }
+
             $appId = $appId ?? $this->gupshupApi->getCurrentAppId();
             if (empty($appId)) {
                 exit(badRequest(400, 'Invalid app ID'));
@@ -147,55 +152,38 @@ class Template {
 
             // Fetch from Gupshup
             $gupshupTemplates = $this->gupshupApi->getTemplates($appId);
-            return $gupshupTemplates;
+
             // Build WHERE clause for local database
-            $whereConditions = ["app_id = '" . $this->db->escape($appId) . "'"];
+            $templateAppId = $this->db->escape($appId);
+            $whereConditions = ["app_id = '$templateAppId' AND user_id = '{$user['id']}'"];
             
-            if (!empty($filters['user_id'])) {
-                $whereConditions[] = "user_id = " . (int)$filters['user_id'];
-            }
             if (!empty($filters['status'])) {
-                $whereConditions[] = "status = '" . $this->db->escape($filters['status']) . "'";
+                $templateStatus = $this->db->escape($filters['status']);
+                $whereConditions[] = "status = '$templateStatus'";
             }
             if (!empty($filters['category'])) {
-                $whereConditions[] = "category = '" . $this->db->escape($filters['category']) . "'";
+                $templateCategory = $this->db->escape($filters['category']);
+                $whereConditions[] = "category = '$templateCategory'";
             }
             if (!empty($filters['template_id'])) {
-                $whereConditions[] = "template_id = '" . $this->db->escape($filters['template_id']) . "'";
+                $template_Id = $this->db->escape($filters['template_id']);
+                $whereConditions[] = "template_id = '$template_Id'";
             }
             
             $where = implode(' AND ', $whereConditions);
-            
-            $localTemplates = $this->db->select($this->templatesTable, $where);
+
+            $localTemplates = $this->db->select($this->templatesTable, "*", $where, 'template_id DESC');
 
             if(empty($localTemplates)){
                 exit(badRequest(400, "template not found"));
             }
-            
-            $localTemplatesMap = [];
-            foreach ($localTemplates as $template) {
-                $localTemplatesMap[$template['template_id']] = $template;
+
+            if(isset($gupshupTemplates['status']) && $gupshupTemplates['status'] === "success"){
+                return $localTemplates;
             }
 
-            $mergedTemplates = [];
-            foreach ($gupshupTemplates as $gupshupTemplate) {
-                $templateId = $gupshupTemplate['id'];
-                $localData = $localTemplatesMap[$templateId] ?? [];
-                $mergedTemplates[] = array_merge(
-                    $localData,
-                    [
-                        'template_id' => $templateId,
-                        'template_name' => $gupshupTemplate['elementName'],
-                        'category' => $gupshupTemplate['category'],
-                        'status' => $gupshupTemplate['status'],
-                        'gupshup_data' => $gupshupTemplate
-                    ]
-                );
-            }
-
-            return $mergedTemplates;
         } catch (Exception $e) {
-            exit(badRequest(500, "Failed to fetch templates: " . $e->getMessage()));
+            return badRequest(500, "Failed to fetch templates: " . $e->getMessage());
         }
     }
 
@@ -287,47 +275,67 @@ class Template {
         }
     }
 
-    private function normalizeTemplateData(array $rawData, string $appId): array {
-        $rawData['elementname'] = str_replace(" ", "_", strtolower($rawData['elementname']));
+    private function normalizeTemplateData(array $rawData, string $appId, $dbData = null): array {
+        $rawData['elementname'] = isset($rawData['elementname']) ?  str_replace(" ", "_", strtolower($rawData['elementname'])) : $dbData['template_name'];
         return [
             'appId' => $appId ?? "",
-            'elementName' => $rawData['elementname'] ?? "",
+            'elementName' => $rawData['elementname'],
             'languageCode' => $rawData['languagecode'] ?? 'en',
             'category' => $rawData['category'] ?? 'MARKETING',
             'templateType' => $rawData['templatetype'] ?? 'TEXT',
-            'vertical' => $rawData['vertical'] ?? null,
-            'content' => $rawData['content'] ?? null,
-            'header' => $rawData['header'] ?? null,
-            'footer' => $rawData['footer'] ?? null,
-            'example' => $rawData['example'] ?? null,
-            'buttons' => $rawData['buttons'] ?? null, 
+            'vertical' => $rawData['vertical'] ?? $dbData['vertical'],
+            'content' => $rawData['content'] ?? $dbData['content'],
+            'header' => $rawData['header'] ?? $dbData['header'],
+            'footer' => $rawData['footer'] ?? $dbData['footer'],
+            'example' => $rawData['example'] ?? $dbData['example'],
+            'buttons' => $rawData['buttons'] ?? $dbData['buttons'], 
             'enableSample' => $rawData['enableSample'] ?? 'true',
             'allowTemplateCategoryChange' => $rawData['allowTemplateCategoryChange'] ?? 'false',
         ];
     }
 
-    private function prepareDbData(array $response, array $mappedData, int $userId): array {
-        return [
-            'template_id' => $response['template']['id'],
-            'template_type' => $response['template']['templateType'],
-            'template_name' => $mappedData['elementName'],
-            'namespace' => $response['template']['namespace'],
-            'containerMeta' => $response['template']['containerMeta'],
-            'category' => $mappedData['category'],
-            'content' => $mappedData['content'],
-            'language' => $mappedData['languageCode'],
-            'status' => $response['template']['status'] ?? 'PENDING',
-            'user_id' => $userId,
-            'app_id' => $mappedData['appId'],
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
+    private function prepareDbData(array $response, array $mappedData, int $userId, $isEditdata = false): array {
+
+        if($isEditdata === true){
+            return [
+                'template_type' => $mappedData['templateType'],
+                'template_name' => $mappedData['elementName'],
+                'category' => $mappedData['category'],
+                'content' => $mappedData['content'],
+                'vertical' => $mappedData['vertical'],
+                'example' => $mappedData['example'],
+                'header' => $mappedData['header'],
+                'footer' => $mappedData['footer'],
+                'status' => $response['status'] ?? 'PENDING',
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+        }else {
+            return [
+                'template_id' => $response['template']['id'],
+                'template_type' => $response['template']['templateType'],
+                'template_name' => $mappedData['elementName'],
+                'namespace' => $response['template']['namespace'],
+                'containerMeta' => $response['template']['containerMeta'],
+                'category' => $mappedData['category'],
+                'content' => $mappedData['content'],
+                'vertical' => $response['template']['vertical'],
+                'example' => $mappedData['example'],
+                'header' => $mappedData['header'],
+                'footer' => $mappedData['footer'],
+                'language' => $mappedData['languageCode'],
+                'status' => $response['template']['status'] ?? 'PENDING',
+                'user_id' => $userId,
+                'app_id' => $mappedData['appId'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+        }
     }
 
     public function validateTemplate(array $data): array {
         $errors = [];
         
-        $requiredFields = ['elementName', 'category', 'templateType', 'vertical', 'content', 'example', 'enableSample'];
+        $requiredFields = ['elementName', 'category', 'templateType', 'content', 'example', 'enableSample'];
         foreach ($requiredFields as $field) {
             if (!isset($data[$field]) || empty($data[$field])) {
                 $errors[] = "Missing required field: {$field}";
