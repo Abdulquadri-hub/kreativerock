@@ -109,31 +109,34 @@ class Conversation {
             return;
         }
         
-        $messageId = $this->recordMessage($conversationId, $prompt['message_text'], 'outgoing', 'automated');
-
         // Send through SMS integration
         $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $prompt['message_text']);
-        $responses = [];
-        foreach ($results as $phoneNumber => $result) {
-            if ($result){
-                $this->db->update(
-                    $this->messagesTable,[
-                        'destination' => $phoneNumber,
-                        'status' => $result->isSuccess() ? 'sent' : 'failed',
-                        'rcs_message_id' => $result->getMessageId(),
-                        'error' => $result->isSuccess() ? null : $result->getMessage()
-                    ],"id = '{$messageId}'");
-            }else{
-                $this->db->update(
-                    $this->messagesTable,[
-                        'destination' => $phoneNumber,
-                        'status' =>  'failed',
-                        'error' => $result
-                    ],"id = '{$messageId}'");
-            }
-        }
+        
 
-    }
+        foreach ($results as $phoneNumber => $result) {
+            // Prepare all message data at once
+            $messageData = [
+                'conversation_id' => $conversationId,
+                'campaign_id' => $conversation['campaign_id'],
+                'contact_id' => $conversation['contact_id'],
+                'content' => $prompt['message_text'],
+                'direction' => 'outgoing',
+                'message_type' => 'text',
+                'interaction_type' => 'automated',
+                'destination' => $phoneNumber,
+                'status' => ($result && $result->isSuccess()) ? 'sent' : 'failed',
+                'error' => ($result && $result->isSuccess()) ? null : ($result ? $result->getMessage() : 'Failed to send')
+            ];
+            
+            // Add message ID if available
+            if ($result && $result->isSuccess()) {
+                $messageData['rcs_message_id'] = $result->getMessageId();
+            }
+            
+            // Insert complete record at once
+            $this->db->insert($this->messagesTable, $messageData);
+        }
+   } 
 
 
     private function recordMessage($conversationId, $content, $direction, $interactionType = 'automated') {
