@@ -128,7 +128,7 @@ class TwoWaySms {
             $updated = $this->updateMessageStatus($messageId, $status);
             $this->logger->info($updated);
 
-            if (!empty($updated)) {
+            if ($updated == 0) {
                 $this->logger->info("Updated message status: $messageId to $status");
             } else {
                 $this->logger->warning("Failed to update message status: $messageId to $status");
