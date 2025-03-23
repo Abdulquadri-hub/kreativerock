@@ -127,7 +127,7 @@ class TwoWaySms {
             // Update message status in database
             $updated = $this->updateMessageStatus($messageId, $status);
             
-            if ($updated) {
+            if (!empty($updated)) {
                 $this->logger->info("Updated message status: $messageId to $status");
             } else {
                 $this->logger->warning("Failed to update message status: $messageId to $status");
@@ -206,7 +206,6 @@ class TwoWaySms {
     }
 
     private function updateMessageStatus($messageId, $status) {
-        // Map RCS statuses to our internal status values if needed
         $statusMap = [
             'sent' => 'sent',
             'delivered' => 'delivered',
