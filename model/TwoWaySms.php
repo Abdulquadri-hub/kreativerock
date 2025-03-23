@@ -137,7 +137,7 @@ class TwoWaySms {
             if ($status === 'failed' || $status === 'undelivered') {
                 $message = $this->db->find($this->messagesTable, "rcs_message_id = '$messageId'");
                 if (!empty($message)) {
-                    $this->logger->error("Message delivery failed: $messageId to {$message['contact_id']}");
+                    $this->logger->error("Message delivery failed: $messageId to {$message['destination']}");
                     // Add retry logic here if needed
                 }
             }
