@@ -200,13 +200,10 @@ class SmsIntegration {
 
     public function checkRcsCapability($phoneNumber) {
         $response = $this->api->checkRCSCapability($phoneNumber);
-        echo json_encode($response); 
         if ($response->isSuccess()) {
-            $capabilities = $response->getData();
-            return $capabilities;
+           return $response->getData();
         } else {
-            $error = $response->getErrorDetails();
-            return $error;
+            return $response->getData();
         }
     }
     

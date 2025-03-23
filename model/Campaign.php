@@ -468,8 +468,26 @@ class Campaign {
         }
         
         $phoneNumbers = json_decode($campaign['phone_numbers'], true);
-        $requiredUnits = count($phoneNumbers);
-        
+
+        if ($campaign['channel'] === 'sms') {
+            $compatibilityCheck = $this->checkRcsCompatibility($phoneNumbers);
+            $compatibleNumbers = $compatibilityCheck['compatible'];
+            $incompatibleNumbers = $compatibilityCheck['incompatible'];
+            
+            $requiredUnits = count($compatibleNumbers);
+        } else {
+            $requiredUnits = count($phoneNumbers);
+        }
+
+        if (empty($compatibleNumbers)) {
+            return [
+                'status' => false, 
+                'message' => 'No RCS compatible numbers found in this campaign',
+                'incompatible_count' => count($incompatibleNumbers),
+                'incompatible_numbers' => $incompatibleNumbers
+            ];
+        }        
+                
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
             return ['status' => false, 'message' => 'Insufficient SMS units'];
         }
@@ -649,18 +667,21 @@ class Campaign {
         return $this->db->insert($this->messagesTable, $messageData);
     }
 
-}
-// private function updatePromptReferences($promptId, $newNextpromptId) {
-//     $this->db->update($this->conversationPromtsTable,['next_prompt_id' => $newNextpromptId],"next_prompt_id = '{$promptId}'");
-// }
+    public function checkRcsCompatibility($phoneNumbers) {
+        $compatibleNumbers = [];
+        $incompatibleNumbers = [];
+        foreach ($phoneNumbers as $phoneNumber) {
+           $result= $this->smsIntegration->checkRcsCapability($phoneNumber);
+            if ($result['statusCode'] !== "Error") {
+                $compatibleNumbers[] = $phoneNumber;
+            } else {
+                $incompatibleNumbers[] = $phoneNumber;
+            }
+        }
+        return [
+            'compatible' => $compatibleNumbers,
+            'incompatible' => $incompatibleNumbers
+        ];
+    }
 
-// private function mapResponseType($oldType) {
-//     $typeMap = [
-//         'text' => 'text',
-//         'keyword' => 'keyword',
-//         'options' => 'options',
-//         // Add more mappings as needed
-//     ];
-    
-//     return $typeMap[$oldType] ?? 'text';
-// }
+}

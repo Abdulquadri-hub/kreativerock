@@ -221,8 +221,7 @@ class TwoWaySms {
         return $this->db->update(
             $this->messagesTable, 
             ['status' => $internalStatus], 
-            "rcs_message_id = ?", 
-            [$messageId]
+            "rcs_message_id = '$messageId'"
         );
     }
     
