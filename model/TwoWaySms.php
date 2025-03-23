@@ -16,9 +16,6 @@ class TwoWaySms {
         $this->logger = new Logger(); 
     }
 
-    /**
-     * Main webhook handler that routes to appropriate handlers based on event type
-     */
     public function handleWebhook($webhookData) {
         try {
             // Validate the webhook data
@@ -46,9 +43,6 @@ class TwoWaySms {
         }
     }
 
-    /**
-     * Handle incoming text messages
-     */
     public function handleIncomingMessage($webhookData) {
         try {
             $messageData = $this->api->webhook($webhookData);
@@ -119,9 +113,6 @@ class TwoWaySms {
         }
     }
 
-    /**
-     * Handle message status updates (delivered, read, etc.)
-     */
     public function handleMessageStatus($webhookData) {
         try {
             $messageData = $this->api->webhook($webhookData);
@@ -158,9 +149,6 @@ class TwoWaySms {
         }
     }
     
-    /**
-     * Handle suggested responses from RCS
-     */
     public function handleSuggestedResponse($webhookData) {
         try {
             $messageData = $this->api->webhook($webhookData);
@@ -196,9 +184,6 @@ class TwoWaySms {
         }
     }
     
-    /**
-     * Handle isTyping events
-     */
     public function handleIsTyping($webhookData) {
         try {
             $messageData = $this->api->webhook($webhookData);
@@ -220,9 +205,6 @@ class TwoWaySms {
         }
     }
 
-    /**
-     * Update message status in the database
-     */
     private function updateMessageStatus($messageId, $status) {
         // Map RCS statuses to our internal status values if needed
         $statusMap = [
@@ -244,9 +226,6 @@ class TwoWaySms {
         );
     }
     
-    /**
-     * Send a message to a contact and record it in the database
-     */
     public function sendMessage($phoneNumber, $message, $campaignId = null, $conversationId = null) {
         try {
             // Send message via API
@@ -286,9 +265,6 @@ class TwoWaySms {
         }
     }
     
-    /**
-     * Send a bulk message to multiple contacts
-     */
     public function sendBulkMessage($phoneNumbers, $message, $campaignId = null) {
         $results = [];
         
@@ -303,9 +279,6 @@ class TwoWaySms {
         return $results;
     }
     
-    /**
-     * Check RCS capability for a phone number
-     */
     public function checkRcsCapability($phoneNumber) {
         try {
             $response = $this->api->checkRCSCapability($phoneNumber);

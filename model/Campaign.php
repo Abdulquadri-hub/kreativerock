@@ -140,16 +140,15 @@ class Campaign {
         
         $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}' AND status = 'draft'");
 
-        // if ($existingCampaign) {
-        //     $campaignId = $existingCampaign['id'];
-        //     $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
-        //     return [
-        //         'status' => true,
-        //         'message' => 'Campaign is saved as draft and not sent',
-        //         'campaign_id' => $campaignId,
-        //     ];
-        // } else 
-        {
+        if ($existingCampaign) {
+            $campaignId = $existingCampaign['id'];
+            $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
+            return [
+                'status' => true,
+                'message' => 'Campaign is saved as draft and not sent',
+                'campaign_id' => $campaignId,
+            ];
+        } else {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
             if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
@@ -577,24 +576,27 @@ class Campaign {
             $conversationId = $this->conversation->startConversation($campaign['id']);
         }
 
-        // Prepare base message data
         $baseMessageData = [
             'source' => $campaign['source'] ?? null,
             'src.name' => $campaign['src_name'] ?? null,
-            'template' => json_encode([
+            'template' => [
                 'id' => $campaign['template_id'],
                 'params' => json_decode($campaign['template_params'], true) ?? []
-            ])
+            ]
         ];
+
+        $processedNumbers = [];
+        $data = [];
+        $successCount = 0;
+        $failureCount = 0;
         
         foreach ($phoneNumbers as $phoneNumber) {
             $messageData = array_merge($baseMessageData, [
-                'destination' => $phoneNumber
+                'destination' => str_replace("+", "", $phoneNumber),
+                'message_type' => $campaign['message_type'],
+                'message' => $campaign['message'],
             ]);
-
-            //handle message type
-            $rst = $this->whatsappIntegration->buildMessageContent($campaign);
-            return $rst;
+            
             try {
                 // Send message through Gupshup
                 $result = $this->whatsappIntegration->sendMessage(
@@ -615,64 +617,39 @@ class Campaign {
                     'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
                     'gush_message_id' => $result['messageId'] ?? null,
                     'gush_response' => json_encode($result),
-                    'message_status' => $result['status']
+                    'status' => $result['status']
                 ]);
-    
-                $responses[] = [
-                    'phone' => $phoneNumber,
-                    'status' => $result['status'],
-                    'message_id' => $messageId,
-                    'campaign_id' => $campaign['id'],
-                    'gush_message_id' => $result['messageId'] ?? null
-                ];
+
+                // Store successful phone numbers and message IDs
+                $processedNumbers[] = $phoneNumber;
+                $data[] = $result;
+                $successCount++;                
+
+                $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
     
             } catch (Exception $e) {
-                
-                $messageId = $this->saveWhatsappMessage([
-                    'user_id' => $campaign['user_id'],
-                    'campaign_id' => $campaign['id'],
-                    'conversation_id' => $conversationId,
-                    'destination' => $phoneNumber,
-                    'message_type' => $campaign['message_type'],
-                    'direction' => 'outgoing',
-                    'content' => $campaign['message'],
-                    'template_id' => $campaign['template_id'],
-                    'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
-                    'error' => $e->getMessage(),
-                    'status' => 'failed'
-                ]);
-    
-                $responses[] = [
-                    'phone' => $phoneNumber,
-                    'status' => 'failed',
-                    'message_id' => $messageId,
-                    'campaign_id' => $campaign['id'],
-                    'error' => $e->getMessage()
-                ];
+                $processedNumbers[] = $phoneNumber;
+                $failureCount++;
             }
         }
     
-        // Update campaign status
-        $this->db->update(
-            $this->campaignTable, 
-            ['status' => 'completed'], 
-            "id = '{$campaign['id']}'"
-        );
-    
         return [
-            'status' => true,
-            'message' => 'WhatsApp campaign completed',
-            'data' => $responses
+            'summary' => [
+                'total_processed' => count($processedNumbers),
+                'success_count' => $successCount,
+                'failure_count' => $failureCount,
+            ],
+            'phone_numbers' => $processedNumbers,
+            'response' => $data,
+            'campaign_id' => $campaign['id']
         ];
     }
-    
-    // Updated saveMessage method to handle new fields
+
     private function saveWhatsappMessage($messageData) {
         return $this->db->insert($this->messagesTable, $messageData);
     }
+
 }
-
-
 // private function updatePromptReferences($promptId, $newNextpromptId) {
 //     $this->db->update($this->conversationPromtsTable,['next_prompt_id' => $newNextpromptId],"next_prompt_id = '{$promptId}'");
 // }

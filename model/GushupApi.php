@@ -410,7 +410,7 @@ class GupshupAPI {
     /* Messaging */
 
     public function sendMessage(string $appId, string $templateId, array $messageData): array {
-        
+
         if (!isset($this->appTokens[$appId])) {
             $this->getAppToken($appId);
         }
@@ -430,18 +430,14 @@ class GupshupAPI {
     
         $endpoint = "/app/{$appId}/template/msg";
         $url = $this->baseUrl . $endpoint;
-    
-        $templateData = [
-            'id' => $templateId,
-            'params' => []
-        ];
-    
+
         $messageContent = $this->buildMessageContent($messageData);
     
         $postData = array_merge($messageData, [
-            'template' => json_encode($templateData),
+            'template' => isset($messageData['template']) ? json_encode($messageData['template']) : json_encode([]),
             'message' => json_encode($messageContent)
         ]);
+        unset($postData['message_type']);
     
         $ch = curl_init();
     
@@ -451,9 +447,9 @@ class GupshupAPI {
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($postData),
             CURLOPT_HTTPHEADER => [
-                'Authorization: ' . $this->appTokens[$appId],
-                'Accept: application/json',
-                'Content-Type: application/x-www-form-urlencoded'
+                'accept: application/json',
+                'content-type: application/x-www-form-urlencoded',
+                'token: ' . $this->appTokens[$appId]
             ]
         ]);
     

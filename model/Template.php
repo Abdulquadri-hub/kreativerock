@@ -275,63 +275,6 @@ class Template {
         }
     }
 
-    private function normalizeTemplateData(array $rawData, string $appId, $dbData = null): array {
-        $rawData['elementname'] = isset($rawData['elementname']) ?  str_replace(" ", "_", strtolower($rawData['elementname'])) : $dbData['template_name'];
-        return [
-            'appId' => $appId ?? "",
-            'elementName' => $rawData['elementname'],
-            'languageCode' => $rawData['languagecode'] ?? 'en',
-            'category' => $rawData['category'] ?? 'MARKETING',
-            'templateType' => $rawData['templatetype'] ?? 'TEXT',
-            'vertical' => $rawData['vertical'] ?? $dbData['vertical'],
-            'content' => $rawData['content'] ?? $dbData['content'],
-            'header' => $rawData['header'] ?? $dbData['header'],
-            'footer' => $rawData['footer'] ?? $dbData['footer'],
-            'example' => $rawData['example'] ?? $dbData['example'],
-            'buttons' => $rawData['buttons'] ?? $dbData['buttons'], 
-            'enableSample' => $rawData['enableSample'] ?? 'true',
-            'allowTemplateCategoryChange' => $rawData['allowTemplateCategoryChange'] ?? 'false',
-        ];
-    }
-
-    private function prepareDbData(array $response, array $mappedData, int $userId, $isEditdata = false): array {
-
-        if($isEditdata === true){
-            return [
-                'template_type' => $mappedData['templateType'],
-                'template_name' => $mappedData['elementName'],
-                'category' => $mappedData['category'],
-                'content' => $mappedData['content'],
-                'vertical' => $mappedData['vertical'],
-                'example' => $mappedData['example'],
-                'header' => $mappedData['header'],
-                'footer' => $mappedData['footer'],
-                'status' => $response['status'] ?? 'PENDING',
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-        }else {
-            return [
-                'template_id' => $response['template']['id'],
-                'template_type' => $response['template']['templateType'],
-                'template_name' => $mappedData['elementName'],
-                'namespace' => $response['template']['namespace'],
-                'containerMeta' => $response['template']['containerMeta'],
-                'category' => $mappedData['category'],
-                'content' => $mappedData['content'],
-                'vertical' => $response['template']['vertical'],
-                'example' => $mappedData['example'],
-                'header' => $mappedData['header'],
-                'footer' => $mappedData['footer'],
-                'language' => $mappedData['languageCode'],
-                'status' => $response['template']['status'] ?? 'PENDING',
-                'user_id' => $userId,
-                'app_id' => $mappedData['appId'],
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-        }
-    }
-
     public function validateTemplate(array $data): array {
         $errors = [];
         
@@ -430,4 +373,64 @@ class Template {
         return $errors;
     }
 
+    public function handleWebhookEvents(){
+        
+    }
+
+    private function normalizeTemplateData(array $rawData, string $appId, $dbData = null): array {
+        $rawData['elementname'] = isset($rawData['elementname']) ?  str_replace(" ", "_", strtolower($rawData['elementname'])) : $dbData['template_name'];
+        return [
+            'appId' => $appId ?? "",
+            'elementName' => $rawData['elementname'],
+            'languageCode' => $rawData['languagecode'] ?? 'en',
+            'category' => $rawData['category'] ?? 'MARKETING',
+            'templateType' => $rawData['templatetype'] ?? 'TEXT',
+            'vertical' => $rawData['vertical'] ?? $dbData['vertical'],
+            'content' => $rawData['content'] ?? $dbData['content'],
+            'header' => $rawData['header'] ?? $dbData['header'],
+            'footer' => $rawData['footer'] ?? $dbData['footer'],
+            'example' => $rawData['example'] ?? $dbData['example'],
+            'buttons' => $rawData['buttons'] ?? $dbData['buttons'], 
+            'enableSample' => $rawData['enableSample'] ?? 'true',
+            'allowTemplateCategoryChange' => $rawData['allowTemplateCategoryChange'] ?? 'false',
+        ];
+    }
+
+    private function prepareDbData(array $response, array $mappedData, int $userId, $isEditdata = false): array {
+
+        if($isEditdata === true){
+            return [
+                'template_type' => $mappedData['templateType'],
+                'template_name' => $mappedData['elementName'],
+                'category' => $mappedData['category'],
+                'content' => $mappedData['content'],
+                'vertical' => $mappedData['vertical'],
+                'example' => $mappedData['example'],
+                'header' => $mappedData['header'],
+                'footer' => $mappedData['footer'],
+                'status' => $response['status'] ?? 'PENDING',
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+        }else {
+            return [
+                'template_id' => $response['template']['id'],
+                'template_type' => $response['template']['templateType'],
+                'template_name' => $mappedData['elementName'],
+                'namespace' => $response['template']['namespace'],
+                'containerMeta' => $response['template']['containerMeta'],
+                'category' => $mappedData['category'],
+                'content' => $mappedData['content'],
+                'vertical' => $response['template']['vertical'],
+                'example' => $mappedData['example'],
+                'header' => $mappedData['header'],
+                'footer' => $mappedData['footer'],
+                'language' => $mappedData['languageCode'],
+                'status' => $response['template']['status'] ?? 'PENDING',
+                'user_id' => $userId,
+                'app_id' => $mappedData['appId'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+        }
+    }
 }
