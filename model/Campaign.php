@@ -447,26 +447,26 @@ class Campaign {
         }
         
         $phoneNumbers = json_decode($campaign['phone_numbers'], true);
-
-        if ($campaign['channel'] === 'sms') {
-            $compatibilityCheck = $this->checkRcsCompatibility($phoneNumbers);
-            $compatibleNumbers = $compatibilityCheck['compatible'];
-            $incompatibleNumbers = $compatibilityCheck['incompatible'];
-            $reasons = $compatibilityCheck['reasons'];
+        $requiredUnits = count($phoneNumbers);
+        // if ($campaign['channel'] === 'sms') {
+        //     $compatibilityCheck = $this->checkRcsCompatibility($phoneNumbers);
+        //     $compatibleNumbers = $compatibilityCheck['compatible'];
+        //     $incompatibleNumbers = $compatibilityCheck['incompatible'];
+        //     $reasons = $compatibilityCheck['reasons'];
             
-            $requiredUnits = count($compatibleNumbers);
-        } else {
-            $requiredUnits = count($phoneNumbers);
-        }
+        //     $requiredUnits = count($compatibleNumbers);
+        // } else {
+        //     $requiredUnits = count($phoneNumbers);
+        // }
 
-        if (empty($compatibleNumbers)) {
-            return [
-                'status' => false, 
-                'message' => $reasons,
-                'incompatible_count' => count($incompatibleNumbers),
-                'incompatible_numbers' => $incompatibleNumbers
-            ];
-        }        
+        // if (empty($compatibleNumbers)) {
+        //     return [
+        //         'status' => false, 
+        //         'message' => $reasons,
+        //         'incompatible_count' => count($incompatibleNumbers),
+        //         'incompatible_numbers' => $incompatibleNumbers
+        //     ];
+        // }        
                 
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
             return ['status' => false, 'message' => 'Insufficient SMS units'];
@@ -670,23 +670,26 @@ class Campaign {
 
     private function handleCampaignResponse($campaignId, $params, $email)
     {
-        if (!empty($campaignId)) {
-            if ($params['scheduled'] === 'NOW') {
-                return $this->sendNow($campaignId, $email);
+        try {
+            if (!empty($campaignId)) {
+                if ($params['scheduled'] === 'NOW') {
+                    return $this->sendNow($campaignId, $email);
+                }
+        
+                return [
+                    'status' => true,
+                    'message' => 'Campaign created successfully',
+                    'campaign_id' => $campaignId,
+                ];
             }
-    
+        } catch (Exception $e) {
             return [
-                'status' => true,
-                'message' => 'Campaign created successfully',
+                'status' => false,
+                'message' => 'Error creating campaign: ' . $e->getMessage(),
                 'campaign_id' => $campaignId,
             ];
         }
     
-        return [
-            'status' => false,
-            'message' => 'Error creating campaign',
-            'campaign_id' => $campaignId,
-        ];
     }
 
 
