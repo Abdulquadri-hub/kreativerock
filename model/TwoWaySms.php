@@ -218,7 +218,7 @@ class TwoWaySms {
         
         $internalStatus = $statusMap[$status] ?? $status;
         
-        return $this->db->update($this->messagesTable, ['status' => $status], "rcs_message_id = '$messageId'");
+        return $this->db->update($this->messagesTable, ['status' => $internalStatus], "rcs_message_id = '$messageId'");
     }
     
     public function sendMessage($phoneNumber, $message, $campaignId = null, $conversationId = null) {
