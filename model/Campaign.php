@@ -143,6 +143,10 @@ class Campaign {
         if ($existingCampaign) {
             $campaignId = $existingCampaign['id'];
             $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
+
+            if($params['campaigntype'] ===  "promotional" && $params['responsehandling'] === "automated"){
+                $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
+            }
             
             return $this->handleCampaignResponse($campaignId, $params, $email);
 
