@@ -125,7 +125,7 @@ class Campaign {
             'source' => $params['source'] ?? null,
             'src_name' => $params['srcname'] ?? null,
             'template_id' => $params['template_id'] ?? null,
-            'template_params' => json_encode($params['template_params']) ?? null,
+            'template_params' => isset($params['template_params']) ?  json_encode($params['template_params']) : null,
             'app_id' => $appId ?? null,
             'phone_numbers' => json_encode($phoneNumbers),
             'sms_pages' => $params['smspages'],
@@ -473,6 +473,7 @@ class Campaign {
             $compatibilityCheck = $this->checkRcsCompatibility($phoneNumbers);
             $compatibleNumbers = $compatibilityCheck['compatible'];
             $incompatibleNumbers = $compatibilityCheck['incompatible'];
+            $reasons = $compatibilityCheck['reasons'];
             
             $requiredUnits = count($compatibleNumbers);
         } else {
@@ -482,7 +483,7 @@ class Campaign {
         if (empty($compatibleNumbers)) {
             return [
                 'status' => false, 
-                'message' => 'No RCS compatible numbers found in this campaign',
+                'message' => $reasons,
                 'incompatible_count' => count($incompatibleNumbers),
                 'incompatible_numbers' => $incompatibleNumbers
             ];
@@ -670,17 +671,21 @@ class Campaign {
     public function checkRcsCompatibility($phoneNumbers) {
         $compatibleNumbers = [];
         $incompatibleNumbers = [];
+        $reasons = [];
         foreach ($phoneNumbers as $phoneNumber) {
            $result= $this->smsIntegration->checkRcsCapability($phoneNumber);
             if ($result['statusCode'] !== "Error") {
                 $compatibleNumbers[] = $phoneNumber;
+                $reasons = $result['response'];
             } else {
                 $incompatibleNumbers[] = $phoneNumber;
+                $reasons = $result['response'];
             }
         }
         return [
             'compatible' => $compatibleNumbers,
-            'incompatible' => $incompatibleNumbers
+            'incompatible' => $incompatibleNumbers,
+            'reasons' => $reasons,
         ];
     }
 
