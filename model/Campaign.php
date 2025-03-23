@@ -138,7 +138,7 @@ class Campaign {
             'media_id' => $params['media_caption'] ?? null
         ];
         
-        $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}' AND status = 'draft'");
+        $existingCampaign = $this->db->find($this->campaignTable, "user_id = '{$user['id']}' AND name = '{$params['campaignname']}'");
 
         if ($existingCampaign) {
             $campaignId = $existingCampaign['id'];
