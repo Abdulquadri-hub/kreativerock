@@ -143,11 +143,9 @@ class Campaign {
         if ($existingCampaign) {
             $campaignId = $existingCampaign['id'];
             $this->db->update($this->campaignTable, $campaignData, "id = '$campaignId'");
-            return [
-                'status' => true,
-                'message' => 'Campaign is saved as draft and not sent',
-                'campaign_id' => $campaignId,
-            ];
+            
+            return $this->handleCampaignResponse($campaignId, $params, $email);
+
         } else {
             $campaignId = $this->db->insert($this->campaignTable, $campaignData);
 
@@ -155,26 +153,7 @@ class Campaign {
                 $this->handlePrompts($campaignId, $user['id'], $params['prompts']);
             }
 
-            if(!empty($campaignId)){
-    
-                if ($params['scheduled'] === 'NOW') {
-                    return $this->sendNow($campaignId, $email);
-                }
-
-                return [
-                    'status' => true,
-                    'message' => 'Campaign created successfully',
-                    'campaign_id' => $campaignId,
-                ];
-    
-            }
-            else {
-                return [
-                    'status' => false,
-                    'message' => 'Error creating campaign',
-                    'campaign_id' => $campaignId,
-                ];
-            }
+            return $this->handleCampaignResponse($campaignId, $params, $email);
         } 
     }
 
@@ -688,5 +667,27 @@ class Campaign {
             'reasons' => $reasons,
         ];
     }
+
+    private function handleCampaignResponse($campaignId, $params, $email)
+    {
+        if (!empty($campaignId)) {
+            if ($params['scheduled'] === 'NOW') {
+                return $this->sendNow($campaignId, $email);
+            }
+    
+            return [
+                'status' => true,
+                'message' => 'Campaign created successfully',
+                'campaign_id' => $campaignId,
+            ];
+        }
+    
+        return [
+            'status' => false,
+            'message' => 'Error creating campaign',
+            'campaign_id' => $campaignId,
+        ];
+    }
+
 
 }
