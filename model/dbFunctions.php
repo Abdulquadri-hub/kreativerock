@@ -3,10 +3,12 @@
 class dbFunctions extends DBClass {
     
     private $connection;
+    private $logger;
     
     public function __construct()
     {
         $this->connection = parent::__construct();
+        $this->logger = new Logger("error_log"); 
     }
     
     public function insert($table, $data) {
@@ -16,9 +18,9 @@ class dbFunctions extends DBClass {
         $types = str_repeat("s", count($data));
         $values = array_values($data);
         $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-        // $stmt = $this->connection->prepare($sql); 
+        
         if (!$stmt = $this->connection->prepare($sql)) {
-            error_log('MySQL prepare error: ' . $this->connection->connect_error);
+            $this->logger->error('MySQL prepare error: ' . $this->connection->connect_error);
             return false;
         }
         $stmt->bind_param($types, ...$values);
@@ -105,7 +107,7 @@ class dbFunctions extends DBClass {
         $sql = "UPDATE $table SET $set WHERE $where";
         $stmt = $this->connection->prepare($sql);
         if ($stmt === false) {
-            echo 'Prepare failed: ' . $this->connection->error;
+            $this->logger->error('Prepare failed: ' . $this->connection->error);
             return false;
         }
 
@@ -114,9 +116,10 @@ class dbFunctions extends DBClass {
         $stmt->bind_param($types, ...$values);
 
         if ($stmt->execute()) {
+            $this->logger->info('Update Successfull: ' . $this->connection->insert_id);
             return $this->connection->insert_id;
         } else {
-            echo $this->connection->error;
+            $this->logger->error('Update failed: ' . $this->connection->error);
             return false;
         }
     }

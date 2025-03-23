@@ -137,7 +137,7 @@ class Conversation {
             $this->db->insert($this->messagesTable, $messageData);
         }
    } 
-
+  
 
     private function recordMessage($conversationId, $content, $direction, $interactionType = 'automated') {
         $conversation = $this->db->find($this->conversationsTable, "id = '{$conversationId}'");
