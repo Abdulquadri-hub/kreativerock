@@ -126,7 +126,6 @@ class TwoWaySms {
             
             // Update message status in database
             $updated = $this->updateMessageStatus($messageId, $status);
-            $this->logger->info($updated);
 
             if ($updated == 0) {
                 $this->logger->info("Updated message status: $messageId to $status");

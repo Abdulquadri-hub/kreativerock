@@ -530,6 +530,7 @@ class Campaign {
             'user_id' => $userId,
             'campaign_id' => $campaign['id'] ?? null,
             'conversation_id' => $conversationId ?? null,
+            'contact_id' => $phoneNumber ?? null,
             'destination' => $phoneNumber,
             'message_type' => 'text',
             'direction' => 'outgoing',
@@ -539,18 +540,25 @@ class Campaign {
             'error' => $result->isSuccess() ? null : $result->getMessage()
         ]);
     }
-
     private function sMsCampaign($campaign, $phoneNumbers) {
         $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
-       
-        $conversationId = null;
-        if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
-            $conversationId = $this->conversation->startConversation($campaign['id']);
-        }
         
         $responses = [];
         foreach ($results as $phoneNumber => $result) {
-            $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
+            $conversationId = null;
+            
+            // Create a unique conversation for each contact if automated responses are enabled
+            if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
+                $conversationId = $this->conversation->startConversation(
+                    $campaign['id'],
+                    $phoneNumber, 
+                    null,         
+                    null          
+                );
+            }
+            
+            $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign, $conversationId, $result);
+            
             $responses[] = [
                 'phone' => $phoneNumber,
                 'status' => $result->isSuccess() ? 'sent' : 'failed',
@@ -568,6 +576,37 @@ class Campaign {
             'data' => $responses
         ];
     }
+
+    // private function sMsCampaign($campaign, $phoneNumbers) {
+    //     $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
+       
+    //     $conversationId = null;
+    //     if (($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated")) {
+    //         $conversationId = $this->conversation->startConversation($campaign['id']);
+    //     }
+        
+    //     $responses = [];
+    //     foreach ($results as $phoneNumber => $result) {
+    //         $this->saveMessage($campaign['user_id'], $phoneNumber, $campaign,$conversationId, $result);
+    //         $responses[] = [
+    //             'phone' => $phoneNumber,
+    //             'status' => $result->isSuccess() ? 'sent' : 'failed',
+    //             'message_id' => $result->getMessageId(),
+    //             'campaign_id' => $campaign['id'],
+    //             'error' => $result->isSuccess() ? null : $result->getMessage()
+    //         ];
+    //     }
+        
+    //     $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
+
+    //     $this->db->update($this->conversationsTable, ['contact_id' => $phoneNumber], "id = '{$campaign['id']}'");
+        
+    //     return [
+    //         'status' => true,
+    //         'message' => 'Campaign sent successfully',
+    //         'data' => $responses
+    //     ];
+    // }
 
     private function whatsAppCampaign($campaign, $phoneNumbers) {
 
