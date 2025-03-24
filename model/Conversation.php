@@ -57,7 +57,19 @@ class Conversation {
             throw new Exception("Conversation not found");
         }
 
-        $this->recordMessage($conversationId, $reply, 'incoming');
+        // $this->recordMessage($conversationId, $reply, 'incoming');
+        $messageData = [
+            'conversation_id' => $conversationId,
+            'campaign_id' => $conversation['campaign_id'],
+            'contact_id' => $conversation['contact_id'],
+            'content' => $reply,
+            'direction' => 'incoming',
+            'message_type' => 'text',
+            'interaction_type' => 'automated',
+            'destination' => $conversation['contact_id'],
+            'status' => 'reply',
+        ];
+        $this->db->insert($this->messagesTable, $messageData);
 
         // Get current node
         $currentPrompt = $this->db->find($this->conversationPromptsTable, "id = '{$conversation['current_prompt_id']}'");
@@ -66,18 +78,45 @@ class Conversation {
             throw new Exception("Conversation prompt not found");
         }
 
-        // Get response validation result
         $validationResult = $this->validateResponse($reply, $currentPrompt);
         
         if ($validationResult['valid']) {
-            // Find next prompt based on sequence order
             $nextPrompt = $this->getNextPrompt($conversation['campaign_id'], $currentPrompt['sequence_order']);
-            
-            // If there's a next prompt, transition to it
+  
+            if (isset($validationResult['message'])) {
+                // $this->recordMessage($conversationId, $validationResult['message'], 'outgoing');
+               $results = $this->smsIntegration->sendBulkOneWaySms([$conversation['contact_id']], $validationResult['message']);
+
+                foreach ($results as $phoneNumber => $result) {
+                   
+                    $messageData = [
+                        'conversation_id' => $conversationId,
+                        'campaign_id' => $conversation['campaign_id'],
+                        'contact_id' => $conversation['contact_id'],
+                        'content' => $validationResult['message'],
+                        'direction' => 'outgoing',
+                        'message_type' => 'text',
+                        'interaction_type' => 'automated',
+                        'destination' => $phoneNumber,
+                        'status' => ($result && $result->isSuccess()) ? 'sent' : 'failed',
+                        'error' => ($result && $result->isSuccess()) ? null : ($result ? $result->getMessage() : 'Failed to send')
+                    ];
+                    
+                    // Add message ID if available
+                    if ($result && $result->isSuccess()) {
+                        $messageData['rcs_message_id'] = $result->getMessageId();
+                    }
+                    
+                    // Insert complete record at once
+                    $this->db->insert($this->messagesTable, $messageData);
+                }
+                
+            }
+
             if ($nextPrompt) {
                 $this->transitionToNextNode($conversationId, $nextPrompt['id']);
             } else {
-                // If there's no next prompt, check if this is an end prompt
+
                 if (isset($currentPrompt['is_end_prompt']) && $currentPrompt['is_end_prompt']) {
                     $this->db->update(
                         $this->conversationsTable,
@@ -86,12 +125,7 @@ class Conversation {
                     );
                 }
             }
-            
-            // If keyword response has a specific message to send back, send it
-            if (isset($validationResult['message'])) {
-                $this->recordMessage($conversationId, $validationResult['message'], 'outgoing');
-                $this->smsIntegration->sendBulkOneWaySms([$conversation['contact_id']], $validationResult['message']);
-            }
+
         } else {
             // Handle invalid response - resend the current node's message
             $this->sendPromptMessage($conversationId, $conversation['current_prompt_id']);
