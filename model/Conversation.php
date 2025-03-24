@@ -80,7 +80,7 @@ class Conversation {
         }
 
         $validationResult = $this->validateResponse($reply, $currentPrompt);
-        $this->logger->info(json_encode($validationResult));
+
         if ($validationResult['valid']) {
             $nextPrompt = $this->getNextPrompt($conversation['campaign_id'], $currentPrompt['sequence_order']);
 
