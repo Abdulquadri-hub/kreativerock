@@ -7,10 +7,12 @@ class Conversation {
     private $conversationPromptsTable = 'conversation_prompts';
     private $messagesTable = 'messages';
     private $campaignTable = 'campaigns';
+    private $logger;
 
     public function __construct() {
         $this->db = new dbFunctions();
         $this->smsIntegration = new SmsIntegration();
+        $this->logger = new Logger(); 
     }
 
     public function startConversation($campaignId = null, $contactId = null, $reply = null, $currentPromptId = null) {
@@ -71,7 +73,6 @@ class Conversation {
         ];
         $this->db->insert($this->messagesTable, $messageData);
 
-        // Get current node
         $currentPrompt = $this->db->find($this->conversationPromptsTable, "id = '{$conversation['current_prompt_id']}'");
 
         if (!$currentPrompt) {
@@ -84,6 +85,7 @@ class Conversation {
             $nextPrompt = $this->getNextPrompt($conversation['campaign_id'], $currentPrompt['sequence_order']);
   
             if (isset($validationResult['message'])) {
+                $this->logger->info("yes: ". $validationResult['message']);
                 // $this->recordMessage($conversationId, $validationResult['message'], 'outgoing');
                $results = $this->smsIntegration->sendBulkOneWaySms([$conversation['contact_id']], $validationResult['message']);
 
@@ -108,7 +110,9 @@ class Conversation {
                     }
                     
                     // Insert complete record at once
+                   
                     $this->db->insert($this->messagesTable, $messageData);
+                    $this->logger->info("yes". $validationResult['message']. "is saved");
                 }
                 
             }
