@@ -611,11 +611,11 @@ class Campaign {
     private function whatsAppCampaign($campaign, $phoneNumbers) {
 
         $responses = [];
-        $conversationId = null;
+        // $conversationId = null;
     
-        if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
-            $conversationId = $this->conversation->startConversation($campaign['id']);
-        }
+        // if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
+        //     $conversationId = $this->conversation->startConversation($campaign['id']);
+        // }
 
         $baseMessageData = [
             'source' => $campaign['source'] ?? null,
@@ -632,6 +632,18 @@ class Campaign {
         $failureCount = 0;
         
         foreach ($phoneNumbers as $phoneNumber) {
+
+            $conversationId = null;
+            if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
+                // Here's the fix - including the contact ID (phone number)
+                $conversationId = $this->conversation->startConversation(
+                    $campaign['id'],     
+                    $phoneNumber,       
+                    null,               
+                    null                 
+                );
+            }
+
             $messageData = array_merge($baseMessageData, [
                 'destination' => str_replace("+", "", $phoneNumber),
                 'message_type' => $campaign['message_type'],
@@ -650,6 +662,7 @@ class Campaign {
                     'user_id' => $campaign['user_id'],
                     'campaign_id' => $campaign['id'],
                     'conversation_id' => $conversationId,
+                    'contact_id' => $phoneNumber,
                     'destination' => $phoneNumber,
                     'message_type' => $campaign['message_type'],
                     'direction' => 'outgoing',
