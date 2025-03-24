@@ -83,7 +83,7 @@ class Conversation {
         
         if ($validationResult['valid']) {
             $nextPrompt = $this->getNextPrompt($conversation['campaign_id'], $currentPrompt['sequence_order']);
-  
+            $this->logger->info(json_encode($validationResult));
             if (isset($validationResult['message'])) {
                 $this->logger->info("yes: ". $validationResult['message']);
                 // $this->recordMessage($conversationId, $validationResult['message'], 'outgoing');
