@@ -80,12 +80,12 @@ class Conversation {
         }
 
         $validationResult = $this->validateResponse($reply, $currentPrompt);
-        
+        $this->logger->info(json_encode($validationResult));
         if ($validationResult['valid']) {
             $nextPrompt = $this->getNextPrompt($conversation['campaign_id'], $currentPrompt['sequence_order']);
-            $this->logger->info(json_encode($validationResult));
+
             if (isset($validationResult['message'])) {
-                $this->logger->info("yes: ". $validationResult['message']);
+
                 // $this->recordMessage($conversationId, $validationResult['message'], 'outgoing');
                $results = $this->smsIntegration->sendBulkOneWaySms([$conversation['contact_id']], $validationResult['message']);
 
@@ -112,7 +112,6 @@ class Conversation {
                     // Insert complete record at once
                    
                     $this->db->insert($this->messagesTable, $messageData);
-                    $this->logger->info("yes". $validationResult['message']. "is saved");
                 }
                 
             }
