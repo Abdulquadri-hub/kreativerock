@@ -18,7 +18,7 @@ class dbFunctions extends DBClass {
         $types = str_repeat("s", count($data));
         $values = array_values($data);
         $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-        
+        $this->logger->info(json_encode($values));
         if (!$stmt = $this->connection->prepare($sql)) {
             $this->logger->error('MySQL prepare error: ' . $this->connection->connect_error);
             return false;
