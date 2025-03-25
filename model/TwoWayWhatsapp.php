@@ -163,7 +163,7 @@ class TwoWayWhatsApp {
                 // $this->notifyAdminAboutRejectedTemplate($elementName, $rejectedReason);
             } else if ($status === 'approved') {
                 $this->db->update($this->templatesTable, [
-                    'status' => $status, 
+                    'status' => strtoupper($status), 
                     'rejected_reason' => null
                 ], "template_id = '$templateId'");
             }
