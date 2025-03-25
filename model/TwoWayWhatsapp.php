@@ -155,9 +155,9 @@ class TwoWayWhatsApp {
                 $this->logger->warning("WhatsApp template $elementName ($templateId) was rejected: $rejectedReason");
                 
                 $this->db->update($this->templatesTable, [
-                    'status' => $status, 
+                    'status' => strtoupper($status), 
                     'rejected_reason' => $rejectedReason
-                ], "template_id = ''$templateId");
+                ], "template_id = '$templateId'");
                 
                 // Notify admins about rejected template
                 // $this->notifyAdminAboutRejectedTemplate($elementName, $rejectedReason);
@@ -165,7 +165,7 @@ class TwoWayWhatsApp {
                 $this->db->update($this->templatesTable, [
                     'status' => $status, 
                     'rejected_reason' => null
-                ], "template_id = ''$templateId");
+                ], "template_id = '$templateId'");
             }
             
             return $payload;
