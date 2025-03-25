@@ -9,6 +9,11 @@ $twoWayWhatsApp = new TwoWayWhatsApp();
 $rawData = file_get_contents('php://input');
 $webhookData = json_decode($rawData, true);
 
+if (json_last_error() !== JSON_ERROR_NONE) {
+    exit(badRequest(204,'Invalid JSON data'));
+}
+
+
 file_put_contents('webhook_requests.log', 
     date('Y-m-d H:i:s') . " - Received webhook: " . $rawData . "\n", 
     FILE_APPEND
