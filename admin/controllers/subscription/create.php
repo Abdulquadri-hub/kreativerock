@@ -10,11 +10,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 //     exit(badRequest(204,'Invalid session data. Proceed to login'));
 // }
 
-
 $gushup = new GupshupAPI();
 
 $jsonInput = file_get_contents('php://input');
 $subscriptionData = json_decode($jsonInput, true);
+
+if (json_last_error() !== JSON_ERROR_NONE) {
+    exit(badRequest(204,'Invalid JSON data'));
+}
 
 $appId = $subscriptionData['appid'] ?? $gushup->getCurrentAppId();
 $result = $gushup->setSubscription($appId, $subscriptionData);
