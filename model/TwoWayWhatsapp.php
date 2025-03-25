@@ -120,7 +120,7 @@ class TwoWayWhatsApp {
             
             // If message failed, we might want to retry or notify admin
             if ($status === 'failed' || $status === 'undelivered') {
-                $message = $this->db->find($this->messagesTable, "whatsapp_message_id = '$messageId'");
+                $message = $this->db->find($this->messagesTable, "gush_message_id = '$messageId'");
                 if (!empty($message)) {
                     $this->logger->error("WhatsApp message delivery failed: $messageId to {$message['contact_id']}");
                     // Add retry logic here if needed
@@ -247,7 +247,7 @@ class TwoWayWhatsApp {
                     'message_type' => 'whatsapp',
                     'interaction_type' => $templateId ? 'template' : 'manual',
                     'status' => $status,
-                    'whatsapp_message_id' => $messageId,
+                    'gush_message_id' => $messageId,
                     'template_id' => $templateId
                 ]);
             }
@@ -309,7 +309,7 @@ class TwoWayWhatsApp {
                     'message_type' => 'whatsapp',
                     'interaction_type' => 'template',
                     'status' => $status,
-                    'whatsapp_message_id' => $messageId,
+                    'gush_message_id' => $messageId,
                     'template_id' => $templateId,
                     'template_params' => json_encode($params)
                 ]);
