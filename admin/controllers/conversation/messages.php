@@ -24,7 +24,7 @@ try {
         }
     }
     
-    $email = $_SESSION["elfuseremail"] ??  "abdulquadri.aq@gmail.com";
+    $email = $_SESSION["elfuseremail"] ??  null;
 
     $result = $conversation->getMessageChain($params['campaign_id'], $params['phonenumber']);
 

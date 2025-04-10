@@ -38,7 +38,7 @@ class Template {
             }
 
             $response = $this->gupshupApi->createTemplate($appId, $mappedData);
-            
+            return $response;
             if ($response['status'] === 'success') {
                 $dbData = $this->prepareDbData($response, $mappedData, $user['id']);
                 $this->db->insert($this->templatesTable, $dbData);
@@ -277,8 +277,8 @@ class Template {
 
     public function validateTemplate(array $data): array {
         $errors = [];
-        
-        $requiredFields = ['elementName', 'category', 'templateType', 'content', 'enableSample'];
+        // 'example',
+        $requiredFields = ['elementName', 'category', 'templateType', 'example', 'content', 'enableSample'];
         foreach ($requiredFields as $field) {
             if (!isset($data[$field]) || empty($data[$field])) {
                 $errors[] = "Missing required field: {$field}";
@@ -373,10 +373,6 @@ class Template {
         return $errors;
     }
 
-    public function handleWebhookEvents(){
-        
-    }
-
     private function normalizeTemplateData(array $rawData, string $appId, $dbData = null): array {
         $rawData['elementname'] = isset($rawData['elementname']) ?  str_replace(" ", "_", strtolower($rawData['elementname'])) : $dbData['template_name'];
         return [
@@ -385,12 +381,12 @@ class Template {
             'languageCode' => $rawData['languagecode'] ?? 'en',
             'category' => $rawData['category'] ?? 'MARKETING',
             'templateType' => $rawData['templatetype'] ?? 'TEXT',
-            'vertical' => $rawData['vertical'] ?? isset($dbData['vertical']) ?? null,
-            'content' => $rawData['content'] ?? isset($dbData['content']) ?? null,
-            'header' => $rawData['header'] ?? isset($dbData['header']) ?? null,
-            'footer' => $rawData['footer'] ?? isset($dbData['footer']) ?? null,
-            'example' => $rawData['example'] ?? isset($dbData['example']) ?? null,
-            'buttons' => $rawData['buttons'] ?? isset($dbData['buttons']) ?? null, 
+            'vertical' => $rawData['vertical'] ?? $dbData['vertical'] ?? null,
+            'content' => $rawData['content'] ?? $dbData['content'] ?? null,
+            'header' => $rawData['header'] ?? $dbData['header'] ?? null,
+            'footer' => $rawData['footer'] ?? $dbData['footer'] ?? null,
+            'example' => $rawData['example'] ?? $dbData['example'] ?? null,
+            'buttons' => $rawData['buttons'] ?? $dbData['buttons'] ?? null, 
             'enableSample' => $rawData['enableSample'] ?? 'true',
             'allowTemplateCategoryChange' => $rawData['allowTemplateCategoryChange'] ?? 'false',
         ];
