@@ -8,23 +8,22 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
     exit(badRequest(204,'Invalid session data. Proceed to login'));
 }
+   
 
 try {
 
     $conversation = new Conversation();
 
-    $jsonInput = file_get_contents('php://input');
-    $params = json_decode($jsonInput, true);
-    
+    $params = $_REQUEST;
     $requiredFields = ["campaign_id", "status"];
-    
-    foreach ($requiredFields as $field) {
+ 
+     foreach($requiredFields as $field){
         if (!isset($params[$field])) {
-            throw new Exception("Missing required field: {$field}");
+         exit(badRequest(400, "Missing required field: {$field}"));
         }
-    }
-    
-    $email = $_SESSION["elfuseremail"] ??  null;
+     }
+
+    $email = $_SESSION["elfuseremail"] ?? null;
 
     $result = $conversation->getContacts($params['campaign_id'], $params['status']);
 

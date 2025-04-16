@@ -13,16 +13,15 @@ try {
 
     $conversation = new Conversation();
 
-    $jsonInput = file_get_contents('php://input');
-    $params = json_decode($jsonInput, true);
-    
+    $params = $_REQUEST;
     $requiredFields = ["campaign_id", "phonenumber"];
-    
-    foreach ($requiredFields as $field) {
+ 
+     foreach($requiredFields as $field){
         if (!isset($params[$field])) {
-            throw new Exception("Missing required field: {$field}");
+         exit(badRequest(400, "Missing required field: {$field}"));
         }
-    }
+     }
+
     
     $email = $_SESSION["elfuseremail"] ??  null;
 
