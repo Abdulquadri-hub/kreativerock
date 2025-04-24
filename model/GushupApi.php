@@ -6,6 +6,8 @@ class GupshupAPI {
     private $password;
     private $token = null;
     private $appTokens = [];
+    private $appTable = "apps";
+    private $usersTable = "users";
     private $currentAppId = "1e1b0a92-6a16-4e29-b738-da3a245f24df";
     private $db;
 
@@ -639,7 +641,6 @@ class GupshupAPI {
         $endpoint = '/app';
         $url = $this->baseUrl . $endpoint;
 
-        // Validate required fields
         $requiredFields = ['name'];
         foreach ($requiredFields as $field) {
             if (!isset($appData[$field])) {
@@ -647,7 +648,6 @@ class GupshupAPI {
             }
         }
 
-        // Set optional fields with defaults
         $appData['templateMessaging'] = $appData['templateMessaging'] ?? false;
         $appData['disableOptinPrefUrl'] = $appData['disableOptinPrefUrl'] ?? false;
 
@@ -818,6 +818,119 @@ class GupshupAPI {
         }
 
         return $responseData;
+    }
+
+    public function setContactDetails(string $appId, array $businessDetails): array {
+        if (!$this->token) {
+            throw new Exception('Partner token not available. Please generate token first.');
+        }
+
+        $endpoint = "/app/{$appId}/onboarding/contact";
+        $url = $this->baseUrl . $endpoint;
+
+        $businessDetails['contactNumber'] = $businessDetails['contactPhone'];
+
+        foreach ($businessDetails as $field) {
+            if (!isset($appData[$field])) {
+                throw new Exception("Missing required field: {$field}");
+            }
+        }
+
+        $contactData = [
+            'contactName' => $businessDetails['contactName'],
+            'contactEmail' => $businessDetails['contactEmail'],
+            'contactNumber' => $businessDetails['contactNumber'],
+        ];
+
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($contactData),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/x-www-form-urlencoded',
+                'token: ' . $this->token
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            throw new Exception('Curl error: ' . curl_error($ch));
+        }
+
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode !== 200) {
+            throw new Exception('Failed to create app. HTTP Code: ' . $httpCode . '. Response: ' . $response);
+        }
+
+        return $responseData;
+    }
+
+    public function storeApp(string $email, string $appId,string  $appName, array $facebookBusinessDetails, string $callback_url, array $onboarding_data) {
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+            exit;
+        }
+
+        $result = $this->db->insert($this->appTable, [
+            "user_id" => $user['id'],
+            "app_id" => $appId,
+            "contact_email" => $facebookBusinessDetails['contactName'],
+            "contact_name" => $facebookBusinessDetails['contactEmail'],
+            "contact_number" => $facebookBusinessDetails['contactPhone'],
+            // "verification_status" => $status,
+            "callback_url" => $callback_url,
+            "onboarding_data" => json_encode($onboarding_data),
+            "app_name" => $appName,
+        ]);
+        
+        return $result;
+    }
+
+    public function onboardUserToWhatsApp($userId, $facebookBusinessDetails) {
+        try {
+
+            $app = $this->createApp($facebookBusinessDetails);
+            $appId = $app['appId'];
+            $appName = $app['name'];
+
+            $this->setContactDetails($appId, $facebookBusinessDetails);
+            
+            $subscriptionData = [
+                'modes' => "SENT,DELIVERED,READ,FAILED,OTHERS,PAYMENTS,MESSAGE,BILLING,FLOWS_MESSAGE,TEMPLATE,ACCOUNT,ENQUEUED",
+                'tag' => "kreativerock_users_whatsapp_events",
+                'url' => "https://comeandsee.com.ng/kreativerock/admin/controllers/whatsapp/webhook?user_id={$userId}&app_id={$appId}",
+                'version' => 2
+            ];
+
+            $this->setSubscription($appId, $subscriptionData);
+
+            $this->storeApp($userId, $appId, $appName, $facebookBusinessDetails, $subscriptionData['url'], $app);
+
+            $appDetails = $this->getAppDetails($appId);
+            
+            return [
+                'status' => 'success',
+                'message' => 'WhatsApp business account setup initiated',
+                'appId' => $appId,
+                'details' => $appDetails
+            ];
+        } catch (Exception $e) {
+            error_log('Failed to onboard user: ' . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Failed to set up WhatsApp business account',
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     private function getTokenFromDb(): ?array {
