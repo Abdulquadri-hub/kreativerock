@@ -16,7 +16,7 @@ jobs:
           server: "ftp.comeandsee.com.ng"
           username: ${{ secrets.FTP_USERNAME }} 
           password: ${{ secrets.FTP_PASSWORD }} 
-          server-dir: /public_html/kreativerock/
+          server-dir: /
           dangerous-clean-slate: false
           exclude: |
             **/.git*
