@@ -540,6 +540,7 @@ class Campaign {
             'error' => $result->isSuccess() ? null : $result->getMessage()
         ]);
     }
+    
     private function sMsCampaign($campaign, $phoneNumbers) {
         $results = $this->smsIntegration->sendBulkOneWaySms($phoneNumbers, $campaign['message']);
         

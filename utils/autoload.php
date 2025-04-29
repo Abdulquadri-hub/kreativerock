@@ -9,6 +9,10 @@ require_once $rootFolder . 'utils/sanitize.php';
 require_once $rootFolder . 'utils/validator.php';
 require_once $rootFolder . 'utils/common.php';
 
+// vendor files
+require_once $rootFolder . 'vendor/src/Facebook/autoload.php';
+
+
 // Include model files
 require_once $rootFolder . 'model/dbclass.php';
 require_once $rootFolder . 'model/model.php';
@@ -32,3 +36,4 @@ require_once $rootFolder . 'model/TwoWayWhatsapp.php';
 require_once $rootFolder . 'model/ApiKeyManager.php';
 require_once $rootFolder . 'model/SmsIntegration.php';
 require_once $rootFolder . 'model/Logger.php';
+require_once $rootFolder . 'model/Facebook.php';

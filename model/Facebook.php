@@ -21,7 +21,7 @@ class Facebook {
 
     public function getLoginUrl($redirectUrl) {
         $helper = $this->facebook->getRedirectLoginHelper();
-        
+
         // Permission scope for business accounts
         $permissions = ['business_management', 'email', 'public_profile'];
         
@@ -71,7 +71,7 @@ class Facebook {
         $helper = $this->facebook->getRedirectLoginHelper();
         
         try {
-            // Get access token
+           
             $accessToken = $helper->getAccessToken();
             
             if (!$accessToken) {
@@ -81,14 +81,11 @@ class Facebook {
                 ];
             }
             
-            // Store access token in session
             $_SESSION['fb_access_token'] = (string) $accessToken;
             
-            // Get basic user info
             $response = $this->facebook->get('/me?fields=id,name,email', $accessToken);
             $user = $response->getGraphUser();
             
-            // Get user's business accounts
             $businessResponse = $this->facebook->get('/me/businesses', $accessToken);
             $businesses = $businessResponse->getGraphEdge()->asArray();
             
