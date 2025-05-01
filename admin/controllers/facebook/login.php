@@ -11,6 +11,5 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
    
 $facebook = new Facebook();
 
-$redirectUrl = $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/admin/controllers/facebook/callback";
-
+$redirectUrl = "http://localhost/kreativerock/admin/controllers/facebook/callback";
 echo $facebook->getLoginUrl($redirectUrl);

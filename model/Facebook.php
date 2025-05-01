@@ -15,21 +15,25 @@ class Facebook {
         $this->facebook =  new \Facebook\Facebook([
             'app_id' => FB_APP_ID,
             'app_secret' => FB_APP_SECRET,
-            'default_graph_version' => 'v16.0', 
+            'default_graph_version' => 'v5.7', 
         ]);
     }
 
     public function getLoginUrl($redirectUrl) {
+
         $helper = $this->facebook->getRedirectLoginHelper();
 
-        // Permission scope for business accounts
+        if (isset($_GET['state'])) {
+            $helper->getPersistentDataHandler()->set('state', $_GET['state']);
+        }
+
         $permissions = ['business_management', 'email', 'public_profile'];
         
         return $helper->getLoginUrl($redirectUrl, $permissions);
     }
 
     public function completeWhatsAppIntegration($userId, $businessId) {
-        // Check if we have an access token
+
         if (!isset($_SESSION['fb_access_token'])) {
             return [
                 'success' => false,
@@ -69,7 +73,7 @@ class Facebook {
     
     public function handleCallback() {
         $helper = $this->facebook->getRedirectLoginHelper();
-        
+       
         try {
            
             $accessToken = $helper->getAccessToken();
