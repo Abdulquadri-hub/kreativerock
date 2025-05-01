@@ -15,7 +15,6 @@ $twoWaySms = new TwoWaySms();
 
 $data = $_REQUEST;
 $data['email'] = $email;
-
 // $results =  $twoWaySms->sendReply($data);
 echo json_encode($results);
 
