@@ -13,7 +13,6 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 $user = new User();
 $smsPackage = new SmsPackage();
 
-
 $email = $_SESSION["elfuseremail"] ??  null;
 $res = $user->getUserInfo("email = '" . $email . "'");
 
