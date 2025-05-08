@@ -143,7 +143,7 @@ class TwoWayWhatsApp {
             }
 
             $templateId = $payload['id'] ?? null;
-            $status = $payload['status'] ?? null; // approved, rejected, deleted, disabled
+            $status = $payload['status'] ?? null; 
             $elementName = $payload['elementName'] ?? null;
             $languageCode = $payload['languageCode'] ?? null;
             $rejectedReason = $payload['rejectedReason'] ?? null;

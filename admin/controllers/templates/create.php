@@ -7,9 +7,9 @@ header('Content-Type: application/json');
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
 
-// if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-//     exit(badRequest(204,'Invalid session data. Proceed to login'));
-// }
+if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+    exit(badRequest(204,'Invalid session data. Proceed to login'));
+}
 
 $template = new Template();
 
@@ -20,7 +20,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     exit(badRequest(204,'Invalid JSON data'));
 }
 
-$email = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com";
+$email = $_SESSION["elfuseremail"] ?? null;
 
 $result = $template->createTemplate($templateData, $email);
 echo success($result);

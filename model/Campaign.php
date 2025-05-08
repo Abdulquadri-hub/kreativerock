@@ -353,7 +353,7 @@ class Campaign {
         return $this->sendNow($campaignId, $email);
     }
 
-    private function validateParams($params) {
+    private function validateParams($params) {+
         $this->errors = [];
         
         if (empty($params['segment_id'])) {
@@ -612,31 +612,50 @@ class Campaign {
     private function whatsAppCampaign($campaign, $phoneNumbers) {
 
         $responses = [];
-        // $conversationId = null;
-    
-        // if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
-        //     $conversationId = $this->conversation->startConversation($campaign['id']);
-        // }
+        $processedNumbers = [];
+        $data = [];
+        $successCount = 0;
+        $failureCount = 0;
+        $errors = [];
 
+        try {
+            $templateParams = json_decode($campaign['template_params'], true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [
+                    'status' => false,
+                    'message' => 'Invalid template parameters format: ' . json_last_error_msg(),
+                    'campaign_id' => $campaign['id']
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'message' => 'Failed to process template parameters: ' . $e->getMessage(),
+                'campaign_id' => $campaign['id']
+            ];
+        }
+    
         $baseMessageData = [
             'source' => $campaign['source'] ?? null,
             'src.name' => $campaign['src_name'] ?? null,
             'template' => [
                 'id' => $campaign['template_id'],
-                'params' => json_decode($campaign['template_params'], true) ?? []
+                'params' => $templateParams ?? []
             ]
         ];
-
-        $processedNumbers = [];
-        $data = [];
-        $successCount = 0;
-        $failureCount = 0;
+        
+        if (empty($campaign['app_id'])) {
+            return [
+                'status' => false,
+                'message' => 'WhatsApp app ID is missing',
+                'campaign_id' => $campaign['id']
+            ];
+        }
         
         foreach ($phoneNumbers as $phoneNumber) {
 
             $conversationId = null;
             if ($campaign['type'] === "promotional" && $campaign['response_handling'] === "automated") {
-                // Here's the fix - including the contact ID (phone number)
                 $conversationId = $this->conversation->startConversation(
                     $campaign['id'],     
                     $phoneNumber,       
@@ -652,7 +671,6 @@ class Campaign {
             ]);
             
             try {
-                // Send message through Gupshup
                 $result = $this->whatsappIntegration->sendMessage(
                     $campaign['app_id'],
                     $campaign['template_id'],
@@ -672,31 +690,67 @@ class Campaign {
                     'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
                     'gush_message_id' => $result['messageId'] ?? null,
                     'gush_response' => json_encode($result),
-                    'status' => $result['status']
+                    'status' => isset($result['status']) ? $result['status'] : 'unknown'
                 ]);
 
-                // Store successful phone numbers and message IDs
-                $processedNumbers[] = $phoneNumber;
+                $processedNumbers[] = [
+                    'phoneNumber' => $phoneNumber,
+                    'status' => $result['status'] ?? 'unknown',
+                    'messageId' => $result['messageId'] ?? null
+                ];
+                
                 $data[] = $result;
                 $successCount++;                
 
-                $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
+                // $this->db->update($this->campaignTable, ['status' => 'completed'], "id = '{$campaign['id']}'");
     
             } catch (Exception $e) {
-                $processedNumbers[] = $phoneNumber;
                 $failureCount++;
+                $errors[] = [
+                    'phoneNumber' => $phoneNumber,
+                    'error' => $e->getMessage()
+                ];
+
+                $this->saveWhatsappMessage([
+                    'user_id' => $campaign['user_id'],
+                    'campaign_id' => $campaign['id'],
+                    'conversation_id' => $conversationId,
+                    'contact_id' => $phoneNumber,
+                    'destination' => $phoneNumber,
+                    'message_type' => $campaign['message_type'],
+                    'direction' => 'outgoing',
+                    'content' => $campaign['message'],
+                    'template_id' => $campaign['template_id'],
+                    'interaction_type' => ($campaign['type'] == "promotional" && $campaign['response_handling'] == "automated") ? "automated" : "manual",
+                    'gush_message_id' => null,
+                    'gush_response' => null,
+                    'status' => 'failed',
+                    'error' => $e->getMessage()
+                ]);
             }
         }
-    
+
+        $campaignStatus = ($failureCount === 0) ? 'completed' : ($successCount === 0 ? 'failed' : 'partially_completed');
+                     
+        $this->db->update($this->campaignTable, [
+            'status' => $campaignStatus,
+            'completed_at' => date('Y-m-d H:i:s'),
+            'success_count' => $successCount,
+            'failure_count' => $failureCount
+        ], "id = '{$campaign['id']}'");
+
         return [
+            'status' => $successCount > 0,
             'summary' => [
-                'total_processed' => count($processedNumbers),
+                'total_processed' => count($phoneNumbers),
                 'success_count' => $successCount,
                 'failure_count' => $failureCount,
             ],
-            'phone_numbers' => $processedNumbers,
-            'response' => $data,
-            'campaign_id' => $campaign['id']
+            'processed_numbers' => $processedNumbers,
+            'errors' => $errors,
+            'response_data' => $data,
+            'campaign_id' => $campaign['id'],
+            'campaign_status' => $campaignStatus
         ];
     }
 

@@ -16,39 +16,39 @@ class Template {
         $this->usersTable = 'users';
     }
 
-    public function createTemplate(array $templateData, string $email, ?string $appId = null): array {
+    public function createTemplate(array $templateData, string $email, ?string $appId = null) {
         try {
 
             $email =  $this->db->escape($email);
             $user = $this->db->find($this->usersTable, "email = '$email'");
             if (!$user) {
-                exit(badRequest(400, 'User not found'));
+                return badRequest(400, 'User not found');
             }
 
             $appId = $appId ?? $this->gupshupApi->getCurrentAppId();
             if (empty($appId)) {
-                exit(badRequest(400, 'Invalid app ID'));
+                return badRequest(400, 'Invalid app ID');
             }
 
             $mappedData = $this->normalizeTemplateData($templateData, $appId);
 
             $validationErrors = $this->validateTemplate($mappedData);
             if (!empty($validationErrors)) {
-                exit(validationError(401,$validationErrors));
+               return validationError(401,$validationErrors);
             }
 
             $response = $this->gupshupApi->createTemplate($appId, $mappedData);
-            return $response;
+
             if ($response['status'] === 'success') {
                 $dbData = $this->prepareDbData($response, $mappedData, $user['id']);
                 $this->db->insert($this->templatesTable, $dbData);
                 return array_merge($response, ['local_data' => $dbData]);
             }
 
-            exit(badRequest(500, 'Failed to create template on Gupshup'));
+           return badRequest(500, 'Failed to create template on Gupshup');
 
         } catch (Exception $e) {
-            exit(badRequest("Failed to create template: " . $e->getMessage()));
+           return badRequest("Failed to create template: " . $e->getMessage());
         }
     }
     

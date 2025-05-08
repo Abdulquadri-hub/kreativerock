@@ -15,7 +15,6 @@ $smsPackage = new SmsPackage();
 
 
 $email = $_SESSION["elfuseremail"] ??  null;
-// $email = $_SESSION["elfuseremail"] ??  "abdulquadri.aq@gmail.com";
 $res = $user->getUserInfo("email = '" . $email . "'");
 
 if($res)
