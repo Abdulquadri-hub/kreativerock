@@ -117,7 +117,7 @@ class dbFunctions extends DBClass {
 
         if ($stmt->execute()) {
             $this->logger->info('Update Successfull: ' . $this->connection->insert_id);
-            return $this->connection->insert_id;
+            return true;
         } else {
             $this->logger->error('Update failed: ' . $this->connection->error);
             return false;

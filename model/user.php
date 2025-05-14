@@ -3,15 +3,13 @@ class User{
 
     public $model;
     private $db;
+    protected $roles_and_permission;
     private $usersTable = "users";
 
     public function __construct(){
         $this->model = new Model();
         $this->db = new dbFunctions();
-    }
-    
-    public function validate(){
-        
+        $this->roles_and_permission = new RolesAndPermissions();
     }
     
     public function login($email, $password){
@@ -20,7 +18,7 @@ class User{
         }
         $password = escape($password);
         $hpassword = hash('sha256', $password);        
-        //$hpassword = hash('ripemd128', "%9*" . $password . "7#");
+
         $user = $this->model->findOne('users', "email = '$email' AND upw = '$hpassword'");
         if ($user !== null) {
             //$organisation = new Organisation();
@@ -60,7 +58,7 @@ class User{
                 return badRequest(205, "Invalid Credentials");
             }elseif($user["status"] === "NOT VERIFIED"){
                 $this->addUserActivity($user["email"], "Successful login of unverified user at " . date("Y-m-d H:i:s"), date("Y-m-d H:i:s"), "LOGIN");
-                $this->updateUserDetails("online='YES'", $user["id"]); //set the online status
+                $this->updateUserDetails("online='YES'", $user["id"]); 
                 return success($user, 300, 'Login Successful. User not Verified');
                 
             } else {
@@ -103,9 +101,6 @@ class User{
         //return $change !== null ? success(null, 200, "Password Changed Successfully") : badRequest("Password change unsuccessful");
         return $change !== null ? 1 : 0; //success(null, 200, "Password Changed Successfully") : badRequest("Password change unsuccessful");
     }
-
-    public function resetPassword($email, $password){
-    }    
     
     public function getUserInfo($condition){
         return $this->model->findOne("users", $condition);
@@ -123,6 +118,7 @@ class User{
         //echo $values;
         return $this->model->insertdata("users", $fields, $values);
     }
+
     public function passwordReset($fields, $values){
         return $this->model->insertdata("preset", $fields, $values);
     }
@@ -131,10 +127,12 @@ class User{
         $users = $this->model->paginate("users", " location_id = $location_id ORDER BY lastname, firstname DESC", $pageno, $limit);
         return $users;
     }
+
     public function retrieveUsersByOrganisation($organisation_id, $pageno, $limit){
         $users = $this->model->paginate("users", " organisation_id = $organisation_id ORDER BY lastname, firstname DESC", $pageno, $limit);
         return $users;
     }
+
     public function retrieveUsersByClass($class, $pageno, $limit){
         $users = $this->model->paginate("users", " class LIKE $class ORDER BY lastname, firstname DESC", $pageno, $limit);
         return $users;
@@ -184,9 +182,11 @@ class User{
         $data["data"] = $result;
         return $data;
     }    
+
     public function getEscapedString($param){
         return $this->model->escapeString($param);
-    }    
+    } 
+
     public function retrieveByQuerySelector($query){
         $res = $this->model->exec_query($query);
         return $res;
@@ -198,18 +198,18 @@ class User{
         return $user['id'];
     }
 
-   public function emailVerification($email, $verificationCode){
+    public function emailVerification($email, $verificationCode){
         $email = $this->db->escape($email);
         $verificationCode = $this->db->escape($verificationCode);
         
-        $result = $this->db->find('verificationlogs', "email = '$email' AND verificationcode = '$verificationCode' AND status = 'EMAILVERIFY'");
+        $result = $this->db->find('email_verifications', "email = '$email' AND verificationcode = '$verificationCode' AND status = 'EMAILVERIFY'");
         
         if ($result !== null) {
             $this->db->update($this->usersTable, [
                 "status" => 'ACTIVE'
             ], "email = '$email'");
 
-            $this->db->update('verificationlogs', [
+            $this->db->update('email_verifications', [
                 "status" => "VERIFIED"
             ], "email = '$email' AND verificationcode = '$verificationCode'");
 
@@ -273,7 +273,7 @@ class User{
         $status = "EMAILVERIFY";
         $tlog = date("D, d M Y H:i:s");
         
-        return $this->db->insert('verificationlogs', [
+        return $this->db->insert('email_verifications', [
             'date' => date('Y-m-d H:i:s'),
             'email' => $email,
             'status' => $status,
@@ -281,5 +281,225 @@ class User{
             'tlog' => $tlog
         ]);
     }
+
+    public function validate($data)
+    {
+        $requiredFields = [
+            'firstname',
+            'lastname',
+            // 'othernames',
+            'address',
+            'email',
+            'phone',
+            'upw'
+        ];
     
+        $errors = [];
+    
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field]) || empty(trim($data[$field]))) {
+                $errors[$field] = ucfirst($field) . ' is required.';
+            }
+        }
+    
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Email format is invalid.';
+        }elseif($this->checkEmailAlreadyExists($data['email'])){
+            $errors['email'] = "Email already taken";
+        }
+    
+        if (!empty($data['phone']) && !preg_match('/^\+?[0-9]{7,15}$/', $data['phone'])) {
+            $errors['phone'] = 'Phone number format is invalid.';
+        }
+    
+        return empty($errors) ? true : $errors;
+    }
+
+    public function create($userData)
+    {
+        $validation = $this->validate($userData);
+        if ($validation !== true) {
+            return $validation;
+        }
+        
+        if (isset($userData['upw'])) {
+            $userData['upw'] = hash('sha256', $userData['upw']);
+        }
+        
+        $userData['referralcode'] = hash('sha256', $userData['email']);
+        
+        $userData['status'] = 'NOT VERIFIED';
+        
+        if (!isset($userData['class']) || empty($userData['class'])) {
+            $userData['class'] = 'USER';
+        }
+        
+        $userData['tlog'] = (isset($_SESSION["user_id"]) ? $_SESSION["user_id"] : '') . ' ' . date('Y-m-d H:i:s');
+        
+        if (!isset($userData['role']) || empty($userData['role'])) {
+            $userData['role'] = $userData['class'];
+        }
+        
+        if (!isset($userData['dateofbirth']) || empty($userData['dateofbirth'])) {
+            $userData['dateofbirth'] = '2000-01-01';
+        }
+        
+        $userData['online'] = 'NO';
+        
+        $userId = $this->db->insert($this->usersTable, $userData);
+        
+        if ($userId) {
+    
+            $verificationCode = $this->generateVerificationCode();
+            $this->saveVerificationCode($userData['email'], $verificationCode);
+            
+            $message = "Your account verification code is: " . $verificationCode;
+            $this->sendVerificationLink($userData['email'], $message, $verificationCode);
+            
+            // Generate API key
+            $apiKeyManager = new ApiKeyManager();
+            $apiKeyManager->generateApiKey($userId);
+            
+            return $userId;
+        }
+        
+        return false;
+    }
+
+    public function resetPassword($email, $password)
+    {
+        $email = $this->db->escape($email);
+        $newhash = hash('sha256', $password);
+        
+        $resetToken = bin2hex(random_bytes(32));
+        $expiryTime = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        
+        $resetData = [
+            'email' => $email,
+            'token' => $resetToken,
+            'expires_at' => $expiryTime,
+            'status' => 'PENDING'
+        ];
+        
+        $inserted = $this->db->insert('password_resets', $resetData);
+        
+        if ($inserted) {
+            // Send password reset email
+            $emailEncoded = base64_encode($email);
+            $tokenEncoded = base64_encode($resetToken);
+            
+            $local = "http://localhost/kreativerock/admin/controllers/resetpassword.php?email=$emailEncoded&token=$tokenEncoded";
+            $live = "https://comeandsee.com.ng/kreativerock/admin/controllers/resetpassword.php?email=$emailEncoded&token=$tokenEncoded";
+            
+            $link = $local; // Change to $live in production
+            $tmessage = "</b> Click the link below to reset your password: <br /><br /> <span style='padding:7px;background-color:#1E90FF;    color:white;'><a href='" . $link . "' style='text-decoration:none;color:white;'>Reset Password</a></span>";
+            $tmessage .= "<br /><br />This link will expire in 24 hours.";
+            
+            $message = "<div style='text-align:left;font-size=12px;color=#000000;font-family=serif'>";
+            $message .= "<br /> " . $tmessage . "<br />";
+            $message .= "</div>";
+            
+            $payload = [
+                "email" => $email,
+                "message" => $message,
+                "subject" => "Password Reset Request"
+            ];
+            
+            $payload = json_encode($payload);
+            
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "https://comeandsee.com.ng/mailer/sendmailtoElfrique.php",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => [
+                    "cache-control: no-cache",
+                    "content-type: application/json"
+                ],
+            ]);
+            
+            $result = curl_exec($curl);
+            curl_close($curl);
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function completePasswordReset($email, $token, $newPassword)
+    {
+        $email = $this->db->escape($email);
+        $token = $this->db->escape($token);
+        
+        // Find the reset token
+        $resetRecord = $this->db->find('password_resets', "email = '$email' AND token = '$token' AND status = 'PENDING' AND expires_at > NOW()");
+        
+        if ($resetRecord) {
+            // Update the password
+            $newHash = hash('sha256', $newPassword);
+            $updated = $this->db->update($this->usersTable, [
+                'upw' => $newHash
+            ], "email = '$email'");
+            
+            if ($updated) {
+                // Mark the token as used
+                $this->db->update('password_resets', [
+                    'status' => 'USED'
+                ], "email = '$email' AND token = '$token'");
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public function updateUserProfileDetails($userId, $data) {
+        if (!$userId || !is_array($data) || empty($data)) {
+            return false;
+        }
+        
+        $protectedFields = ['id', 'email', 'referralcode', 'status', 'created_at'];
+        foreach ($protectedFields as $field) {
+            if (isset($data[$field])) {
+                unset($data[$field]);
+            }
+        }
+        
+        $cleanData = [];
+        foreach ($data as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            
+            if ($key === 'dateofbirth') {
+                $cleanData[$key] = $value;
+            } else {
+                $cleanData[$key] = htmlentities($value, ENT_QUOTES);
+            }
+        }
+        
+        if (empty($cleanData)) {
+            return false;
+        }
+        
+        // Update the user record
+        return $this->db->update($this->usersTable, $cleanData, "id = " . (int)$userId);
+    } 
+
+    public function checkEmailAlreadyExists($email){
+        $email = $this->db->escape($email);
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(empty($user)){
+            return false;
+        }
+
+        return true;
+    }
 }

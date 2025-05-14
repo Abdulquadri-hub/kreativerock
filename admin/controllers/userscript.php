@@ -109,83 +109,63 @@ if($res){
     $id = $res["id"];
 
     $phone = ((isset($_POST["phone"]) && is_numeric($_POST["phone"]) && strlen($_POST["phone"]) === 11) ? $_POST["phone"] : $res["phone"]);
-    
-	$query = "lastname = '" . ((isset($_REQUEST["lastname"]) && $_REQUEST["lastname"] !== '') ? htmlentities($_REQUEST["lastname"],ENT_QUOTES) : $res["lastname"]) . "',
-	firstname = '" . ((isset($_REQUEST["firstname"]) && $_REQUEST["firstname"] !== '') ? htmlentities($_REQUEST["firstname"],ENT_QUOTES) : $res["firstname"]) . "',
-	othernames = '" . ((isset($_REQUEST["othernames"]) && $_REQUEST["othernames"] !== '') ? htmlentities($_REQUEST["othernames"],ENT_QUOTES) : $res["othernames"]) . "',
-	dateofbirth = '" . ((isset($_REQUEST["dateofbirth"]) && $_REQUEST["dateofbirth"] !== '') ? $_REQUEST["dateofbirth"] : $res["dateofbirth"]) . "',
-	identificationtype = '" . ((isset($_REQUEST["identificationtype"]) && $_REQUEST["identificationtype"] !== '') ? $_REQUEST["identificationtype"] : $res["identificationtype"]) . "',
-	imageurl = '" . (($filename1 !== "" && $filename1 !== "-") ? $filename1 : $res["imageurl"]) . "',
-	address = '" . ((isset($_REQUEST["address"]) && $_REQUEST["address"] !== '') ? htmlentities($_REQUEST["address"],ENT_QUOTES) : $res["address"]) . "',
-	phone = '" . $phone . "',
-	class = '" . ((isset($_REQUEST["class"]) && $_REQUEST["class"] !== '') ? htmlentities($_REQUEST["class"],ENT_QUOTES) : $res["class"]) . "',
-	organisation = '" . ((isset($_REQUEST["organisation"]) && $_REQUEST["organisation"] !== '') ? htmlentities($_REQUEST["organisation"],ENT_QUOTES) : $res["organisation"]) . "',
-	industry = '" . ((isset($_REQUEST["industry"]) && $_REQUEST["industry"] !== '') ? htmlentities($_REQUEST["industry"],ENT_QUOTES) : $res["industry"]) . "',
-	positioninthecompany = '" . ((isset($_REQUEST["positioninthecompany"]) && $_REQUEST["positioninthecompany"] !== '') ? htmlentities($_REQUEST["positioninthecompany"],ENT_QUOTES) : $res["positioninthecompany"]) . "',
-	currency = '" . ((isset($_REQUEST["currency"]) && $_REQUEST["currency"] !== '') ? htmlentities($_REQUEST["currency"],ENT_QUOTES) : $res["currency"]) . "',
-	timezone = '" . ((isset($_REQUEST["timezone"]) && $_REQUEST["timezone"] !== '') ? htmlentities($_REQUEST["timezone"],ENT_QUOTES) : $res["timezone"]) . "',
-	country = '" . ((isset($_REQUEST["country"]) && $_REQUEST["country"] !== '') ? htmlentities($_REQUEST["country"],ENT_QUOTES) : $res["country"]) . "'";
-	
-	$result = $user->updateUserDetails($query, $id);
-	if($result){
-		echo success($result,200, "Successful","Successful");
-	}else{
-		echo badRequest(204, "Not successful");
-	}
-	
-}else{
-    
-    $hpassword = (isset($_POST["upw"]) && $_POST["upw"] !== "") ? hash('sha256', escape($_POST["upw"])) : "BAD";
-    
-    $email = isset($_POST["email"]) &&  filter_var($_POST["email"], FILTER_VALIDATE_EMAIL) ? $_POST["email"] : "BAD";
-    $phone = ((isset($_POST["phone"]) && is_numeric($_POST["phone"]) && strlen($_POST["phone"]) >= 10) ? $_POST["phone"] : "BAD");
-    
-    $referralcode = hash('sha256', $email);
-	$userSessionId = isset($_SESSION["user_id"]) ?? null;
 
-	$fields = "email,lastname,firstname,othernames,imageurl,address,phone,upw,class,
-	permissions,status,tlog,role,dateofbirth,online,referralcode";
+    $updateData = [
+        'lastname' => $_REQUEST["lastname"] ?? $res["lastname"],
+        'firstname' => $_REQUEST["firstname"] ?? $res["firstname"],
+        'othernames' => $_REQUEST["othernames"] ?? $res["othernames"],
+        'dateofbirth' => $_REQUEST["dateofbirth"] ?? $res["dateofbirth"],
+        'identificationtype' => $_REQUEST["identificationtype"] ?? $res["identificationtype"],
+        'imageurl' => ($filename1 !== "" && $filename1 !== "-") ? $filename1 : $res["imageurl"],
+        'address' => $_REQUEST["address"] ?? $res["address"],
+        'phone' => ((isset($_POST["phone"]) && is_numeric($_POST["phone"]) && strlen($_POST["phone"]) === 11) ? $_POST["phone"] : $res["phone"]),
+        'class' => $_REQUEST["class"] ?? $res["class"],
+        'organisation' => $_REQUEST["organisation"] ?? $res["organisation"],
+        'industry' => $_REQUEST["industry"] ?? isset($res["industry"])? $res["industry"] : "",
+        'positioninthecompany' => $_REQUEST["positioninthecompany"] ?? $res["positioninthecompany"],
+        'currency' => $_REQUEST["currency"] ?? $res["currency"],
+        'timezone' => $_REQUEST["timezone"] ?? $res["timezone"],
+        'country' => $_REQUEST["country"] ?? $res["country"],
+    ];
+    
+    $result = $user->updateUserProfileDetails($id, $updateData);
+    if ($result) {
+        echo success($result, 200, "User records updated successfully", "Successful");
+    } else {
+        echo badRequest(204, "Not successful");
+    }
 	
-	$values = "'" . $email . "',
-	'" . ((isset($_REQUEST["lastname"]) && $_REQUEST["lastname"] !== '') ? htmlentities($_REQUEST["lastname"],ENT_QUOTES) : '-') . "',
-	'" . ((isset($_REQUEST["firstname"]) && $_REQUEST["firstname"] !== '') ? htmlentities($_REQUEST["firstname"],ENT_QUOTES) : '-') . "',
-	'" . ((isset($_REQUEST["othernames"]) && $_REQUEST["othernames"] !== '') ? htmlentities($_REQUEST["othernames"],ENT_QUOTES) : '-') . "',
-	'" . $filename1 . "',
-	'" . ((isset($_REQUEST["address"]) && $_REQUEST["address"] !== '') ? htmlentities($_REQUEST["address"],ENT_QUOTES) : '-') . "',
-	'" . $phone . "',
-	
-	'" . $hpassword . "',
-	'$becomeamerchant',	
-	
-	'" . ((isset($_REQUEST["permissions"]) && $_REQUEST["permissions"] !== '' )? htmlentities($_REQUEST["permissions"],ENT_QUOTES) : '-') . "',
-	'NOT VERIFIED',
-	'" . $userSessionId. " " . date('Y-m-d H:i:s') . "',
-	'$becomeamerchant',
-	'" . ((isset($_REQUEST["dateofbirth"]) && $_REQUEST["dateofbirth"] !== '' )? $_REQUEST["dateofbirth"] : '2000-01-01') . "',
-	'NO','$referralcode'";
-	
-	
-	if($hpassword === "BAD" || $email === "BAD" || $phone === "BAD"){
-	    exit(badRequest(204, "Bad credentials"));
-	}else{
-	    $result = $user->registerUser($fields, $values);
-	}
+} else {
+    $user = new User();
 
-	if($result){
+    $userData = [
+        'email' => isset($_POST["email"]) && filter_var($_POST["email"], FILTER_VALIDATE_EMAIL) ? $_POST["email"] : "BAD",
+        'lastname' => isset($_REQUEST["lastname"]) && $_REQUEST["lastname"] !== '' ? htmlentities($_REQUEST["lastname"], ENT_QUOTES) : '-',
+        'firstname' => isset($_REQUEST["firstname"]) && $_REQUEST["firstname"] !== '' ? htmlentities($_REQUEST["firstname"], ENT_QUOTES) : '-',
+        'othernames' => isset($_REQUEST["othernames"]) && $_REQUEST["othernames"] !== '' ? htmlentities($_REQUEST["othernames"], ENT_QUOTES) : '-',
+        'imageurl' => $filename1,
+        'address' => isset($_REQUEST["address"]) && $_REQUEST["address"] !== '' ? htmlentities($_REQUEST["address"], ENT_QUOTES) : '-',
+        'phone' => isset($_POST["phone"]) && is_numeric($_POST["phone"]) && strlen($_POST["phone"]) >= 10 ? $_POST["phone"] : "BAD",
+        'upw' => isset($_POST["upw"]) && $_POST["upw"] !== "" ? $_POST["upw"] : "BAD",
+        'class' => $becomeamerchant,
+        'permissions' => isset($_REQUEST["permissions"]) && $_REQUEST["permissions"] !== '' ? htmlentities($_REQUEST["permissions"], ENT_QUOTES) : '-',
+        'dateofbirth' => isset($_REQUEST["dateofbirth"]) && $_REQUEST["dateofbirth"] !== '' ? $_REQUEST["dateofbirth"] : '2000-01-01',
+        'role' => $becomeamerchant
+    ];
 
-        $verificationCode = $user->generateVerificationCode();
-        $user->saveVerificationCode($email, $verificationCode);
-        
-        $message = "Your account verification code is: " . $verificationCode;
-        $user->sendVerificationLink($email, $message, $verificationCode);
-		
-		$user_id = $user->getUserIdByEmail($email);
-        $apiKeyManger->generateApiKey($user_id);
-        
-        $data = $user->retrieveByQuerySelector("SELECT * FROM users WHERE email = '" . $user->getEscapedString($email) . "' LIMIT 1");
+    if ($userData['upw'] === "BAD" || $userData['email'] === "BAD" || $userData['phone'] === "BAD") {
+        exit(badRequest(204, "Bad credentials"));
+    }
+    
+    $result = $user->create($userData);
+    
+    if (is_numeric($result)) {  
+        $data = $user->retrieveByQuerySelector("SELECT * FROM users WHERE email = '" . $user->getEscapedString($userData['email']) . "' LIMIT 1");
         $data = $data[0];
-
+        
         echo success($data, 200, "Registration successful. Please check your email for verification link.", "Successful");
+    } else if (is_array($result)) { 
+        echo badRequest(204, "Registration not successful: " . implode(", ", $result));
     } else {
         echo badRequest(204, "Registration not successful");
     }

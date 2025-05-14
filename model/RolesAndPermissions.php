@@ -170,6 +170,10 @@ class RolesAndPermissions extends dbFunctions {
     public function getRole($roleId) {
         return $this->find('roles', "id = $roleId");
     }
+
+    public function getRoleByName($roleName) {
+        return $this->find('roles', "name = '$roleName'");
+    }
     
     public function getPermission($permissionId) {
         return $this->find('permissions', "id = $permissionId");
