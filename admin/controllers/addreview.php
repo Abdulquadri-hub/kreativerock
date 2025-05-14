@@ -1,11 +1,11 @@
 <?php
-require_once '../../utils/errorhandler.php';
-require_once '../../utils/response.php';
-require_once '../../model/dbclass.php';
-require_once '../../model/model.php';
-require_once '../../model/Administration.php';
 
-//date_default_timezone_set('Africa/Lagos');
+session_start();
+
+header('Content-Type: application/json');
+
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
+
 $created_at = date('Y-m-d H:i:s');
 $admin = new Administration();
 //$res = $department->getDepartmentInfo("id = " . intval($_POST['id']));

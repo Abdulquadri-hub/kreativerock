@@ -1,11 +1,10 @@
 <?php
-session_start();
-require_once '../../utils/errorhandler.php';
-require_once '../../utils/response.php';
-require_once '../../model/dbclass.php';
-require_once '../../model/model.php';
-require_once '../../model/user.php';
 
+session_start();
+
+header('Content-Type: application/json');
+
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
      exit(badRequest(204,'Invalid session data. Proceed to login'));
 }

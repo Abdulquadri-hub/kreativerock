@@ -1,10 +1,10 @@
 <?php
-session_start();  
-require_once '../../utils/errorhandler.php';
-require_once '../../utils/response.php';
-require_once '../../model/dbclass.php';
-require_once '../../model/model.php';
-require_once '../../model/FrameWork.php';
+
+session_start();
+
+header('Content-Type: application/json');
+
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
 $framework = new FrameWork();
 $results = $framework->executeByQuerySelector("SELECT * FROM markup");
