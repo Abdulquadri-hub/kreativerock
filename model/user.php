@@ -2,9 +2,12 @@
 class User{
 
     public $model;
+    private $db;
+    private $usersTable = "users";
 
     public function __construct(){
         $this->model = new Model();
+        $this->db = new dbFunctions();
     }
     
     public function validate(){
@@ -189,8 +192,94 @@ class User{
         return $res;
     }
 
-    public function getUnits(){
-        //
+    public function getUserIdByEmail($email){
+        $email = $this->db->escape($email);
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        return $user['id'];
+    }
+
+   public function emailVerification($email, $verificationCode){
+        $email = $this->db->escape($email);
+        $verificationCode = $this->db->escape($verificationCode);
+        
+        $result = $this->db->find('verificationlogs', "email = '$email' AND verificationcode = '$verificationCode' AND status = 'EMAILVERIFY'");
+        
+        if ($result !== null) {
+            $this->db->update($this->usersTable, [
+                "status" => 'ACTIVE'
+            ], "email = '$email'");
+
+            $this->db->update('verificationlogs', [
+                "status" => "VERIFIED"
+            ], "email = '$email' AND verificationcode = '$verificationCode'");
+
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function sendVerificationLink($email, $message, $verificationcode){
+        $emailencoded = base64_encode($email);
+        $vercode = base64_encode($verificationcode);
+
+        $local = "http://localhost/kreativerock/admin/controllers/verifyuser.php?email=$emailencoded&vercode=$vercode";
+        $live = "https://comeandsee.com.ng/kreativerock/admin/controllers/verifyuser.php?email=$emailencoded&vercode=$vercode";
+        
+        $link = $local;
+        $tmessage = "</b> Click the link below to verify your account: <br /><br /> <span style='padding:7px;background-color:#1E90FF;color:white;'><a href='" . $link . "' style='text-decoration:none;color:white;'>Click this link</a></span>";
+        
+        $message = "<div style='text-align:left;font-size=12px;color=#000000;font-family=serif'>";
+        $message .= "<br /> " . $tmessage . "<br />";
+        $message .= "</div>";
+        
+        $payload = array(
+            "email" => $email,
+            "message" => $message,
+            "subject" => "Elfrique Email Verification"
+        );
+            
+        $payload = json_encode($payload);
+        
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://comeandsee.com.ng/mailer/sendmailtoElfrique.php",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => array(
+              "cache-control: no-cache",
+              "content-type: application/json"
+            ),
+        ));
+        
+        $result = curl_exec($curl);
+        curl_close($curl);
+        return $result;
+    }
+    
+    public function generateVerificationCode() {
+        return mt_rand(1000000000, 9999999999);
+    }
+    
+    public function saveVerificationCode($email, $verificationCode) {
+        $email = $this->db->escape($email);
+        $verificationCode = $this->db->escape($verificationCode);
+        $status = "EMAILVERIFY";
+        $tlog = date("D, d M Y H:i:s");
+        
+        return $this->db->insert('verificationlogs', [
+            'date' => date('Y-m-d H:i:s'),
+            'email' => $email,
+            'status' => $status,
+            'verificationcode' => $verificationCode,
+            'tlog' => $tlog
+        ]);
     }
     
 }

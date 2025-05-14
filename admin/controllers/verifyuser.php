@@ -1,27 +1,21 @@
 <?php
-session_start();
-require_once '../../utils/errorhandler.php';
-require_once '../../utils/response.php';
-require_once '../../model/dbclass.php';
-require_once '../../model/model.php';
-require_once '../../model/user.php';
-require_once '../../model/smslog.php';
-require_once '../../utils/common.php';
-require_once '../../utils/sanitize.php';
-date_default_timezone_set('Africa/Lagos');
 
-if($_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
+session_start();
+
+header('Content-Type: application/json');
+
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
+
+if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
     $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
     //exit(json_encode($response));
     logoff();
 }
 
 $user = new User();
-//errorhandler("Phone: " . escape($_POST["phone"]));
-//errorhandler("Phone: " . $user->getEscapedString(escape($_POST["phone"])));
 
 $smslog = new SMSLog();
-$email = $_SESSION["elfuseremail"]; //$user->getEscapedString(escape($_POST["phone"]));
+$email = $_SESSION["elfuseremail"] ?? null; //$user->getEscapedString(escape($_POST["phone"]));
 $ver_code = (isset($_GET["vercode"]) && $_GET["vercode"] !== "") ? htmlentities($_OET["vercode"],ENT_QUOTES) : "";
 if($ver_code === ""){
     logoff();

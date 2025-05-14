@@ -4,24 +4,10 @@ session_start();
 
 header('Content-Type: application/json');
 
-$rootFolder = $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/";
-require_once $rootFolder . 'utils/errorhandler.php';
-require_once $rootFolder . 'utils/response.php';
-require_once $rootFolder . 'utils/sanitize.php';
-require_once $rootFolder . 'model/dbclass.php';
-require_once $rootFolder . 'model/dbFunctions.php';
-require_once $rootFolder . 'model/model.php';
-require_once $rootFolder . 'model/user.php';
-require_once $rootFolder . 'model/ApiKeyManager.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
 $apiKeyManger = new ApiKeyManager();
-
-// require_once '../../utils/errorhandler.php';
-// require_once '../../utils/response.php';
-// require_once '../../model/dbclass.php';
-// require_once '../../model/model.php';
-// require_once '../../model/user.php';
-// require_once '../../utils/sanitize.php';
+$rolesAndPermissions = new RolesAndPermissions();
 
 $filename1 = "";
 if(isset($_FILES["userphotoname"]["name"]) && $_FILES["userphotoname"]["name"] !== null && $_FILES["userphotoname"]["name"] !== "-"){
@@ -184,17 +170,25 @@ if($res){
 	}else{
 	    $result = $user->registerUser($fields, $values);
 	}
-	
+
 	if($result){
-		$data = $user->retrieveByQuerySelector("SELECT * FROM users WHERE email = '{$email}' LIMIT 1");
-		$data = $data[0];
-		$apiKeyManger->generateApiKey($data['id']);
-		echo success($data,200, "Successful","Successful");
-	}else{
-	    echo badRequest(204, "Registration not successful");
-	}
-    
-    
+
+        $verificationCode = $user->generateVerificationCode();
+        $user->saveVerificationCode($email, $verificationCode);
+        
+        $message = "Your account verification code is: " . $verificationCode;
+        $user->sendVerificationLink($email, $message, $verificationCode);
+		
+		$user_id = $user->getUserIdByEmail($email);
+        $apiKeyManger->generateApiKey($user_id);
+        
+        $data = $user->retrieveByQuerySelector("SELECT * FROM users WHERE email = '" . $user->getEscapedString($email) . "' LIMIT 1");
+        $data = $data[0];
+
+        echo success($data, 200, "Registration successful. Please check your email for verification link.", "Successful");
+    } else {
+        echo badRequest(204, "Registration not successful");
+    }
 }
 
 ?>

@@ -2,6 +2,8 @@
 
 $rootFolder = $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/";
 
+date_default_timezone_set('Africa/Lagos');
+
 // Include utility files
 require_once $rootFolder . 'utils/errorhandler.php';
 require_once $rootFolder . 'utils/response.php';
@@ -37,3 +39,4 @@ require_once $rootFolder . 'model/ApiKeyManager.php';
 require_once $rootFolder . 'model/SmsIntegration.php';
 require_once $rootFolder . 'model/Logger.php';
 require_once $rootFolder . 'model/Facebook.php';
+require_once $rootFolder . 'model/RolesAndPermissions.php';

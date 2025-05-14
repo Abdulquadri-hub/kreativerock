@@ -1,13 +1,13 @@
 <?php
-session_start();
-require_once '../../utils/errorhandler.php';
-require_once '../../utils/response.php';
-require_once '../../model/dbclass.php';
-require_once '../../model/model.php';
-require_once '../../model/user.php';
-date_default_timezone_set('Africa/Lagos');
 
-if($_SESSION["user_id"] === null || $_SESSION["user_id"] === ""){
+session_start();
+
+header('Content-Type: application/json');
+
+require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
+
+
+if(isset($_SESSION["user_id"]) && $_SESSION["user_id"] === null || $_SESSION["user_id"] === ""){
     $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
     exit(json_encode($response));
 }
@@ -56,16 +56,16 @@ if($resuser){
     //$message .= "Email: " . $userres["email"] . "<br />";
     $message .= "<br /> " . $tmessage . "<br />";
     $message .= "</div>";
-    /*
+    
     $mheaders = "MIME-Version: 1.0"  . "\r\n";
     $mheaders .= "Content-type:text/html; charset=UTF-8" . "\r\n";		
-    $subject = "How To Grow: Verification";
+    $subject = "KreativeRock: Verification";
     $message = wordwrap($message, 70);	
 
-    $mheaders .= "From: info@nglohitech.com" . "\r\n"; //$_REQUEST['email'];
+    $mheaders .= "From: info@nglohitech.com" . "\r\n"; $_REQUEST['email'];
     $mheaders .= "Reply-To: info@nglohitech.com" . "\r\n";
     $response = mail($email,$subject,$message, $mheaders); 
-    */
+    
     sendEmail($email,$message,$verificationcode);
     
     //$user->addUserActivity($_SESSION["phone"], $_SESSION["phone"] . " | Fialed attempt to reset pin at " . date("Y-m-d H:i:s"), date("Y-m-d H:i:s"), "CHANGE PIN");
@@ -112,11 +112,12 @@ function sendEmail($email,$message,$verificationcode){
     return $result;
     
 }
+
 /*
 function sendEmail($mainadmin,$email,$messg){
 
 	//$postdata = "mainadmin=". $mainadmin ."&email=".$email."&messg=".$messg;
-	require("class.phpmailer.php");
+	// require("class.phpmailer.php");
 	$mail = new PHPMailer();
 	//$mail->IsMail();
 	$mail->IsSMTP();
