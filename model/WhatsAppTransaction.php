@@ -1,46 +1,46 @@
 <?php
 
 
-class SmsTransaction  {
+class WhatsAppTransaction  {
     
     public $model;
     private $db;
     private $usersTable = 'users';
-    private $smsTransactionsTable = 'sms_transactions';
+    private $whatsappTransactionsTable = 'whatsapp_transactions';
     private $userUnitsTable = 'user_units';
-    private $smsPurchasesTable = 'sms_purchases';
+    private $whatsappPurchasesTable = 'whatsapp_purchases';
     
     public function __construct(){
         $this->model = new Model();
         $this->db = new dbFunctions();
     }
     
-    public function getSmsTransactionInfo($condition){
-        return $this->model->findOne($this->smsTransactionsTable, $condition);
+    public function getWhatsAppTransactionInfo($condition){
+        return $this->model->findOne($this->whatsappTransactionsTable, $condition);
     }
-    public function checkIfSmsTransactionExists($condition){
-        return count($this->model->findOne($this->smsTransactionsTable, $condition)) > 0 ? true : false;
+    public function checkIfWhatsAppTransactionExists($condition){
+        return count($this->model->findOne($this->whatsappTransactionsTable, $condition)) > 0 ? true : false;
     }
-    public function registerSmsTransaction($fields, $values){
-        return $this->model->insertdata($this->smsTransactionsTable, $fields, $values);
+    public function registerWhatsAppTransaction($fields, $values){
+        return $this->model->insertdata($this->whatsappTransactionsTable, $fields, $values);
     }
-    public function removeSmsTransaction($condition){
-        return $this->model->deletedata($this->smsTransactionsTable, $condition);
+    public function removeWhatsAppTransaction($condition){
+        return $this->model->deletedata($this->whatsappTransactionsTable, $condition);
     }
-    public function retrieveAllSmsTransaction($pageno, $limit){
-        $data = $this->model->paginate($this->smsTransactionsTable, " 1 ORDER BY id ASC", $pageno, $limit);
+    public function retrieveAllWhatsAppTransaction($pageno, $limit){
+        $data = $this->model->paginate($this->whatsappTransactionsTable, " 1 ORDER BY id ASC", $pageno, $limit);
         return $data;
     }
-    public function retrieveSmsTransactionByStatus($status, $pageno, $limit){
-        $data = $this->model->paginate($this->smsTransactionsTable, "status LIKE '$status' ORDER BY id ASC", $pageno, $limit);
-        return $data;
-    }    
-    public function retrieveSmsTransactionByQuery($query, $pageno, $limit,$field = "*"){
-        $data = $this->model->paginate($this->smsTransactionsTable, $query, $pageno, $limit,$field);
+    public function retrieveWhatsAppTransactionByStatus($status, $pageno, $limit){
+        $data = $this->model->paginate($this->whatsappTransactionsTable, "status LIKE '$status' ORDER BY id ASC", $pageno, $limit);
         return $data;
     }    
-    public function updateSmsTransactionDetails($query, $id){
-        return $this->model->update($this->smsTransactionsTable, $query, "WHERE id = $id");
+    public function retrieveWhatsAppTransactionByQuery($query, $pageno, $limit,$field = "*"){
+        $data = $this->model->paginate($this->whatsappTransactionsTable, $query, $pageno, $limit,$field);
+        return $data;
+    }    
+    public function updateWhatsAppTransactionDetails($query, $id){
+        return $this->model->update($this->whatsappTransactionsTable, $query, "WHERE id = $id");
     } 
     
     public function retrieveByQuerySelector($query){
@@ -55,20 +55,20 @@ class SmsTransaction  {
             return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
         }
         
-        $smsPurchased = $this->db->find($this->smsPurchasesTable, "transactionref = '$reference'");
+        $smsPurchased = $this->db->find($this->whatsappPurchasesTable, "transactionref = '$reference'");
         if(!$smsPurchased){
             return ['status' => false, 'code' => 404, 'message' => 'Sms purchased package not found.'];
         }
         
-        $smsTransaction = $this->db->find($this->smsTransactionsTable, "reference = '$reference' AND status = 'COMPLETED'");
-        if(!$smsTransaction){
+        $WhatsAppTransaction = $this->db->find($this->whatsappTransactionsTable, "reference = '$reference' AND status = 'COMPLETED'");
+        if(!$WhatsAppTransaction){
             return ['status' => false, 'code' => 404, 'message' => 'Sms purchased package transaction not found.'];
         }
         
         $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         
         $qtyPurchased = $smsPurchased['qty'] ?? 0;
-        $qtyUsed = $smsTransaction['qtyout'] ?? 0;
+        $qtyUsed = $WhatsAppTransaction['qtyout'] ?? 0;
         $amountSpent = $smsPurchased['amount'] ?? 0.00;
         $currentDate = date('Y-m-d H:i:s');
 
@@ -84,7 +84,7 @@ class SmsTransaction  {
                 'total_amount_spent' => $updatedTotalAmountSpent,
                 'last_transaction_date' => $currentDate,
                 'updated_at' => $currentDate,
-                'type' => 'sms'
+                'type' => 'whatsapp'
             ];
     
             $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}'");
@@ -98,7 +98,7 @@ class SmsTransaction  {
                 'last_transaction_date' => $currentDate,
                 'created_at' => $currentDate,
                 'updated_at' => $currentDate,
-                'type' => 'sms'
+                'type' => 'whatsapp'
             ];
             
             $this->db->insert($this->userUnitsTable, $insertData);
@@ -126,7 +126,7 @@ class SmsTransaction  {
 	    $postdata["email"] = $email;
 	    $postdata["currency"] = $currency;
 	    $postdata["customer"] = $customer;
-	    $postdata["redirect_url"] = $redirectTo. "sms/verifychekoutsms?reference=$ref&packageid=$packageid&callback=$callbackUrl";
+	    $postdata["redirect_url"] = $redirectTo. "whatsapp/verifychekout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
 	    
 	    //"channels" => ["card,bank"]
 	    $durl = $url; //."?".$getdata;

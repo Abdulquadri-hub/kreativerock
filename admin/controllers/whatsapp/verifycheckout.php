@@ -11,9 +11,8 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsPackage = new SmsPackage();
-$smsPurchase = new SmsPurchase();
-$smsTransaction = new SmsTransaction();
+$WhatsAppPackage = new WhatsAppPackage();
+$whatsAppTransaction = new whatsAppTransaction();
 $admin = new Administration();
 
 
@@ -33,32 +32,31 @@ $skey = $fluttercon["secretkey"];
 
 if($status === "failed")
 {
-   
     $redirectTo =  $callbackUrl . "&packageid=$packageid&status=$status";
     header("Location: $redirectTo");
     
 }else{
     
-    $response = $smsTransaction->verifyPayment($transaction_id,$skey);
+    $response = $whatsAppTransaction->verifyPayment($transaction_id,$skey);
     
     $datarow = json_decode($response,true);
     if($datarow["status"] === "success")
     {
         if($datarow["data"]["status"] === "successful")
         {
-            $purchasedPackages = $admin->executeByQuerySelector("SELECT * FROM sms_purchases WHERE transactionref = '$reference'");
+            $purchasedPackages = $admin->executeByQuerySelector("SELECT * FROM whatsapp_purchases WHERE transactionref = '$reference'");
             if($purchasedPackages)
             {
                 foreach($purchasedPackages as $purchasedPackage)
                 {
-                    // $smsPackagePurchasedUpdate = $admin->executeByQuerySelector("UPDATE sms_purchases SET status = 'Active' WHERE id = " . $purchasedPackage["id"]);
-                    $smsTransactionUpdate = $admin->executeByQuerySelector("
-                                                    UPDATE sms_transactions SET status = 'COMPLETED' 
+                    // $WhatsAppPackagePurchasedUpdate = $admin->executeByQuerySelector("UPDATE whatsapp_purchases SET status = 'Active' WHERE id = " . $purchasedPackage["id"]);
+                    $whatsAppTransactionUpdate = $admin->executeByQuerySelector("
+                                                    UPDATE whatsapp_transactions SET status = 'COMPLETED' 
                                                     WHERE packageid = " . $purchasedPackage["packageid"] . " 
                                                     AND reference = " .$purchasedPackage['transactionref']." ");
                 }
                
-                $smsTransaction->createOrUpdateUserUnits($reference, $email);
+                $whatsAppTransaction->createOrUpdateUserUnits($reference, $email);
             }
             
             $flutterResponse = json_encode($datarow["data"]);

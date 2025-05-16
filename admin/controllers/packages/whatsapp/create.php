@@ -10,9 +10,8 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
     exit(badRequest(204,'Invalid session data. Proceed to login'));
 }
 
-
 $user = new User();
-$smsPackage = new SmsPackage();
+$whatsPackage = new WhatsAppPackage();
 
 $email = $_SESSION["elfuseremail"] ??  null;
 $res = $user->getUserInfo("email = '" . $email . "'");
@@ -39,7 +38,7 @@ if($res)
 	            '" . $user . "'
 	          ";
     
-    $result = $smsPackage->registerSmsPackage($fields, $values);
+    $result = $whatsPackage->registerWhatsappPackage($fields, $values);
     if($result)
     {
         echo  success($result,200, "Successful","Successful");

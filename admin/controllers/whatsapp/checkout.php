@@ -7,9 +7,9 @@ header('Content-Type: application/json');
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
 $user = new User();
-$smsPackage = new SmsPackage();
-$smsPurchase = new SmsPurchase();
-$smsTransaction = new SmsTransaction();
+$WhatsAppPackage = new WhatsAppPackage();
+$WhatsAppPurchase = new WhatsAppPurchase();
+$WhatsAppTransaction = new WhatsAppTransaction();
 $admin = new Administration();
 
 $email = (isset($_REQUEST['user']) && $_REQUEST['user'] !== "" ? $_REQUEST['user'] : "");
@@ -33,7 +33,7 @@ if($res)
         exit(json_encode(["status" => false, "code" => 204, "messsage" => "Bad Request"]));
     }
     
-    $package = $smsPackage->getSmsPackageInfo("id = '" . $packageid . "'");
+    $package = $WhatsAppPackage->getWhatsAppPackageInfo("id = '" . $packageid . "'");
     if(empty($package))
     {
         exit(json_encode(["status" => false, "code" => 400, "messsage" => "Package Not Found!"]));
@@ -53,7 +53,7 @@ if($res)
     $customername = $res["lastname"] . " " . $res["firstname"];
     $phone = "";
     
-    $payment = $smsTransaction->makePayment($ref,$amount,$email,$phone,$customername,$currency,$skey,$packageid,$callbackUrl);
+    $payment = $WhatsAppTransaction->makePayment($ref,$amount,$email,$phone,$customername,$currency,$skey,$packageid,$callbackUrl);
     $paymentResponse = json_decode($payment, true);
     if($paymentResponse['status'] === "success")    
     {
@@ -61,24 +61,24 @@ if($res)
         $fields = "`user`, `packageid`, `qty`, `amount`, `transactionref`";
         $values = " '" . $user . "', '" . $packageid . "', '" . $qty . "', '" . $amount . "', '" . $ref . "' ";
     
-        $result = $smsPurchase->registerSmsPurchase($fields, $values);
+        $result = $WhatsAppPurchase->registerWhatsAppPurchase($fields, $values);
         if($result)
         {
-            $message = 'Purchase of SMS ' . $qty . ' units from package ' . $package['packagename'];
+            $message = 'Purchase of WHATSAPP ' . $qty . ' units from package ' . $package['packagename'];
             $status = "PENDING";
             $gateway = "FLUTTERWAVE";
             $paymentmethod = "CARD";
             $transactionFields = " `user`,`packageid`,`qtyin`,`qtyout`,`message`,`amount`, `gateway`, `description`, `reference`, `paymentmethod`,  `status` ";
             $transactionValues = " '" . $user . "', '" . $packageid . "', '" . $qty . "', '" . 0 . "', '" . $message . "', '" . $amount . "', '" . $gateway . "', '" . $description . "',  '" . $ref . "', '" . $paymentmethod . "', '" . $status . "' ";
         
-            $transaction = $smsTransaction->registerSmsTransaction($transactionFields, $transactionValues);
+            $transaction = $WhatsAppTransaction->registerWhatsAppTransaction($transactionFields, $transactionValues);
             if($transaction)
             {
                 //
                 
             }else {
             
-                exit(json_encode(["status" => false, "code" => 500, "message" => "Sms Transaction Not Successful."]));
+                exit(json_encode(["status" => false, "code" => 500, "message" => "Whatsapp Transaction Not Successful."]));
             }
             
             echo json_encode(['status' => true, "code" => 200, "data" => $paymentResponse]);
@@ -86,7 +86,7 @@ if($res)
         
         }else {
         
-            exit(json_encode(["status" => false, "code" => 500, "message" => "Sms Checkout Not Successful."]));
+            exit(json_encode(["status" => false, "code" => 500, "message" => "Whatsapp Checkout Not Successful."]));
         }
           
     }else {
