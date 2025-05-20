@@ -11,7 +11,7 @@ if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !i
 }
 
 $user = new User();
-$userId = $user->getUserIdByEmail($_SESSION['elfuseremail'] ?? "abdulquadri.aq@gmail.com");
+$userId = $user->getUserIdByEmail($_SESSION['elfuseremail']);
 
 if (!$userId) {
     exit(badRequest(404, 'User not found'));
