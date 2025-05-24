@@ -5,7 +5,7 @@ class ExternalSmsApi {
     private $db;
     private $apiKeyManager;
     private $apiLogTable = 'api_logs';
-    private const MAX_BATCH_SIZE = 100;
+    private const MAX_BATCH_SIZE = 100; 
     private const RATE_LIMIT_PER_HOUR = 1000;
     private const MESSAGE_MAX_LENGTH = 160;
     private $usersTable = "users";

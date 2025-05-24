@@ -107,6 +107,35 @@ switch ($action) {
             exit(badRequest(500, 'Failed to create role'));
         }
         break;
+    case 'create_permission':
+        
+        if (!$rolePermissions->hasPermission($userId, 'roles_and_permissions')) {
+            exit(badRequest(403, 'You do not have permission to create permissions'));
+        }
+        
+        $name = $_POST['name'] ?? '';
+        $description = $_POST['description'] ?? '';
+        
+        if (empty($name)) {
+            exit(badRequest(400, 'permission name is required'));
+        }
+        
+        $result = $rolePermissions->createPermission($name, $description);
+        if ($result) {
+            echo json_encode([
+                'status' => 'success',
+                'code' => 200,
+                'message' => 'Role created successfully',
+                'data' => [
+                    'role_id' => $result,
+                    'name' => $name,
+                    'description' => $description
+                ]
+            ]);
+        } else {
+            exit(badRequest(500, 'Failed to create role'));
+        }
+        break;
         
     case 'sync_role_permissions':
         

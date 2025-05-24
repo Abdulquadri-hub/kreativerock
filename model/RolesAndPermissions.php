@@ -37,7 +37,6 @@ class RolesAndPermissions extends dbFunctions {
         
         return $this->insert('roles', $data);
     }
-    
 
     public function updateRole($roleId, $data) {
         $where = "id = $roleId";
