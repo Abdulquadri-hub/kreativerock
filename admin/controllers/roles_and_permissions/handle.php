@@ -127,13 +127,13 @@ switch ($action) {
                 'code' => 200,
                 'message' => 'Role created successfully',
                 'data' => [
-                    'role_id' => $result,
+                    'permission_id' => $result,
                     'name' => $name,
                     'description' => $description
                 ]
             ]);
         } else {
-            exit(badRequest(500, 'Failed to create role'));
+            exit(badRequest(500, 'Failed to create permission'));
         }
         break;
         

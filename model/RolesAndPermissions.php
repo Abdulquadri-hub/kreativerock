@@ -177,10 +177,7 @@ class RolesAndPermissions extends dbFunctions {
     public function getPermission($permissionId) {
         return $this->find('permissions', "id = $permissionId");
     }
-    
-    /**
-     * Synchronize roles for a user (remove all existing roles and assign new ones)
-     */
+
     public function syncUserRoles($userId, $roleIds) {
         $this->beginTransaction();
         
@@ -202,9 +199,6 @@ class RolesAndPermissions extends dbFunctions {
         }
     }
     
-    /**
-     * Synchronize permissions for a role (remove all existing permissions and assign new ones)
-     */
     public function syncRolePermissions($roleId, $permissionIds) {
         $this->beginTransaction();
         
@@ -224,5 +218,160 @@ class RolesAndPermissions extends dbFunctions {
             $this->logger->error('Error syncing role permissions: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function getUserWithRolesAndPermissions($userId) {
+        $sql = "
+            SELECT 
+                u.*,
+                r.id as role_id,
+                r.name as role_name,
+                r.description as role_description,
+                p.id as permission_id,
+                p.name as permission_name,
+                p.description as permission_description
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE u.id = ?
+            ORDER BY r.id, p.id
+        ";
+        
+        $result = $this->query($sql, [$userId]);
+        
+        if(!$result) {
+            return null;
+        }
+        
+        $userData = null;
+        $roles = [];
+        $permissions = [];
+        $processedRoles = [];
+        $processedPermissions = [];
+        
+        foreach($result as $row) {
+
+            if(!$userData) {
+                $userData = [
+                    'id' => $row['id'],
+                    'email' => $row['email'],
+                    'firstname' => $row['firstname'],
+                    'lastname' => $row['lastname'],
+                    'status' => $row['status'],
+                    'address' => $row['address'],
+                    'class' => $row['class'],
+                    'role' => $row['role'],
+                    'dateofbirth' => $row['dateofbirth'],
+                    'referralcode' => $row['referralcode']
+                ];
+            }
+            
+            if($row['role_id'] && !in_array($row['role_id'], $processedRoles)) {
+                $roles[] = [
+                    'id' => $row['role_id'],
+                    'name' => $row['role_name'],
+                    'description' => $row['role_description']
+                ];
+                $processedRoles[] = $row['role_id'];
+            }
+            
+            if($row['permission_id'] && !in_array($row['permission_id'], $processedPermissions)) {
+                $permissions[] = [
+                    'id' => $row['permission_id'],
+                    'name' => $row['permission_name'],
+                    'description' => $row['permission_description']
+                ];
+                $processedPermissions[] = $row['permission_id'];
+            }
+        }
+        
+        if($userData) {
+            $userData['roles'] = $roles;
+            $userData['permissions'] = $permissions;
+        }
+        
+        return $userData;
+    }
+    
+    public function getAllUsersWithRolesAndPermissions() {
+        $sql = "
+            SELECT 
+                u.*,
+                r.id as role_id,
+                r.name as role_name,
+                r.description as role_description,
+                p.id as permission_id,
+                p.name as permission_name,
+                p.description as permission_description
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            ORDER BY u.id, r.id, p.id
+        ";
+        
+        $result = $this->query($sql);
+        
+        if(!$result) {
+            return [];
+        }
+        
+        $users = [];
+        $processedUsers = [];
+        
+        foreach($result as $row) {
+            $userId = $row['id'];
+            
+            // Initialize user if not processed
+            if(!isset($processedUsers[$userId])) {
+                $processedUsers[$userId] = [
+                    'id' => $row['id'],
+                    'email' => $row['email'],
+                    'firstname' => $row['firstname'],
+                    'lastname' => $row['lastname'],
+                    'status' => $row['status'],
+                    'address' => $row['address'],
+                    'class' => $row['class'],
+                    'role' => $row['role'],
+                    'dateofbirth' => $row['dateofbirth'],
+                    'referralcode' => $row['referralcode'],
+                    'roles' => [],
+                    'permissions' => [],
+                    'processedRoles' => [],
+                    'processedPermissions' => []
+                ];
+            }
+            
+            // Add unique roles
+            if($row['role_id'] && !in_array($row['role_id'], $processedUsers[$userId]['processedRoles'])) {
+                $processedUsers[$userId]['roles'][] = [
+                    'id' => $row['role_id'],
+                    'name' => $row['role_name'],
+                    'description' => $row['role_description']
+                ];
+                $processedUsers[$userId]['processedRoles'][] = $row['role_id'];
+            }
+            
+            // Add unique permissions
+            if($row['permission_id'] && !in_array($row['permission_id'], $processedUsers[$userId]['processedPermissions'])) {
+                $processedUsers[$userId]['permissions'][] = [
+                    'id' => $row['permission_id'],
+                    'name' => $row['permission_name'],
+                    'description' => $row['permission_description']
+                ];
+                $processedUsers[$userId]['processedPermissions'][] = $row['permission_id'];
+            }
+        }
+        
+        // Clean up helper arrays and return indexed array
+        foreach($processedUsers as &$user) {
+            unset($user['processedRoles']);
+            unset($user['processedPermissions']);
+        }
+        
+        return array_values($processedUsers);
     }
 }
