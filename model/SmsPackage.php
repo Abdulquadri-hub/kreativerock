@@ -13,7 +13,7 @@ class SmsPackage  {
         return $this->model->findOne("sms_packages", $condition);
     }
     public function checkIfSmsPackageExists($condition){
-        return count($this->model->findOne("sms_packages", $condition)) > 0 ? true : false;
+        return $this->model->findOne("sms_packages", $condition)? true : false;
     }
     public function registerSmsPackage($fields, $values){
         return $this->model->insertdata("sms_packages", $fields, $values);

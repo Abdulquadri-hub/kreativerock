@@ -17,16 +17,15 @@ $whatsPackage = new WhatsAppPackage();
 $email = $_SESSION["elfuseremail"] ??  null;
 $res = $user->getUserInfo("email = '" . $email . "'");
 
-if($res)
-{
+if($res){
+
     $user = $res['email'];
     $status = "Active";
     $packagename = (isset($_POST['packagename']) && $_POST['packagename']  !== "") ? $_POST['packagename'] : "" ;
     $numberofunits = (isset($_POST['numberofunits']) && $_POST['numberofunits'] !== "") ? $_POST['numberofunits'] : "";
     $costperunit = (isset($_POST['costperunit']) && $_POST['costperunit'] !== "") ?  $_POST['costperunit'] : "";
     
-    if(($packagename == "") || ($numberofunits == "" ) || ($numberofunits == "") ||  ($costperunit == "" || $costperunit < 0))
-    {
+    if(($packagename == "") || ($numberofunits == "" ) || ($numberofunits == "") ||  ($costperunit == "" || $costperunit < 0)){
         exit(badRequest(204, "BAD REQUEST!"));
     }
     
@@ -40,12 +39,9 @@ if($res)
 	          ";
     
     $result = $smsPackage->registerSmsPackage($fields, $values);
-    if($result)
-    {
+    if($result){
         echo  success($result,200, "Successful","Successful");
-        
     }else {
-        
         echo badRequest(204, "Registration not successful");
     }
         

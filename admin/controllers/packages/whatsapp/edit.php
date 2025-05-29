@@ -20,14 +20,13 @@ if($res)
 {
    
     $id = isset($_REQUEST['id'])  && $_REQUEST['id'] ? $_REQUEST['id'] :  "";
-    if($id === "")
-    {
-        exit("BAD REQUEST");
+    if($id === ""){
+        exit(badRequest(400, "id is required"));
     }
 
-    if($whatsPackage->checkIfWhatsAppPackageExists("id = '" . $id . "'")){
+    if($whatsPackage->checkIfWhatsAppPackageExists("id = '$id'")){
 
-        $row = $whatsPackage->getWhatsAppPackageInfo("id = '" . $id . "'");
+        $row = $whatsPackage->getWhatsAppPackageInfo("id = '$id'");
 
         if(!empty($row)){
             $status = "Active";
@@ -38,11 +37,9 @@ if($res)
                       " ;
 	        
 	        $result = $whatsPackage->updateWhatsAppPackageDetails($query, $id);
-	        if($result)
-            {
-                $updatedRow = $whatsPackage->getWhatsAppPackageInfo("id = '" . $id . "'");
-                echo  success($result,200, "Successful",$updatedRow);
-        
+	        if($result){
+                $updatedRow = $whatsPackage->getWhatsAppPackageInfo("id = '$id'");
+                echo success($result,200, "Successful",$updatedRow);
             }else {
                 echo badRequest(204, "Update not successful");
             }
@@ -50,7 +47,7 @@ if($res)
         }
         
     }else {
-        echo badRequest(204, "Package Do not Exists");
+        echo badRequest(204, "Package do not Exists");
     }
     
     

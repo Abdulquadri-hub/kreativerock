@@ -1,20 +1,22 @@
 <?php
 
 
-class WhatsAppPackage  {
+class WhatsAppPackage  extends dbFunctions{
     
     public $model;
     private $whatsappPackagesTable = "whatsapp_packages";
     
     public function __construct(){
+        parent::__construct();
         $this->model = new Model();
     }
     
     public function getWhatsAppPackageInfo($condition){
         return $this->model->findOne($this->whatsappPackagesTable, $condition);
     }
+
     public function checkIfWhatsAppPackageExists($condition){
-        return count($this->model->findOne($this->whatsappPackagesTable, $condition)) > 0 ? true : false;
+        return $this->model->findOne($this->whatsappPackagesTable, $condition) ? true : false;
     }
     public function registerWhatsAppPackage($fields, $values){
         return $this->model->insertdata($this->whatsappPackagesTable, $fields, $values);

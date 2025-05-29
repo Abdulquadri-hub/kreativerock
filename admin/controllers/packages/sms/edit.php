@@ -26,10 +26,10 @@ if($res)
         exit("BAD REQUEST");
     }
 
-    if($smsPackage->checkIfSmsPackageExists("id = '" . $id . "'"))
+    if($smsPackage->checkIfSmsPackageExists("id = '$id'"))
     {
         
-        $row = $smsPackage->getSmsPackageInfo("id = '" . $id . "'");
+        $row = $smsPackage->getSmsPackageInfo("id = '$id'");
 
         if(!empty($row))
         {
@@ -44,7 +44,7 @@ if($res)
 	        $result = $smsPackage->updateSmsPackageDetails($query, $id);
 	        if($result)
             {
-                $updatedRow = $smsPackage->getSmsPackageInfo("id = '" . $id . "'");
+                $updatedRow = $smsPackage->getSmsPackageInfo("id = '$id'");
                 echo  success($result,200, "Successful",$updatedRow);
         
             }else {

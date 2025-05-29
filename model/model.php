@@ -27,6 +27,7 @@ class Model extends DBClass
     public function findOne($tablename, $condition, $fields = "*")
     {
         $query = "SELECT $fields FROM $tablename WHERE $condition LIMIT 1";
+
         $result = $this->conn->query($query) or errorhandler($this->conn->error);
         $data = array();
         if ($result) {
