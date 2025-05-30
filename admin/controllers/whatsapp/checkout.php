@@ -13,8 +13,7 @@ $WhatsAppTransaction = new WhatsAppTransaction();
 $admin = new Administration();
 
 $email = (isset($_REQUEST['user']) && $_REQUEST['user'] !== "" ? $_REQUEST['user'] : "");
-if($email == "")
-{
+if($email == ""){
     exit(json_encode(["status" => false, "code" => 400, "message" => "Bad Request"]));
 }
 
