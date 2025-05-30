@@ -40,7 +40,8 @@ if($res){
     
     $result = $smsPackage->registerSmsPackage($fields, $values);
     if($result){
-        echo  success($result,200, "Successful","Successful");
+        $savedData = $whatsPackage->getWhatsAppPackageInfo("packagename = '$packagename'");
+        echo  success($savedData,200, "Successful");
     }else {
         echo badRequest(204, "Registration not successful");
     }
