@@ -13,40 +13,29 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 $user = new User();
 $smsPackage = new SmsPackage();
 
-$email = $_SESSION["elfuseremail"] ??  null;
+$email = $_SESSION["elfuseremail"] ?? null;
 $res = $user->getUserInfo("email = '" . $email . "'");
 
-if($res)
-{
+if($res){
    
     $id = isset($_REQUEST['id'])  && $_REQUEST['id'] ? $_REQUEST['id'] :  "";
-    if($id === "")
-    {
-        exit("BAD REQUEST");
+    if($id === ""){
+        exit(badRequest(400, "id is required"));
     }
 
-    if($smsPackage->checkIfSmsPackageExists("id = '" . $id . "'"))
-    {
+    if($smsPackage->checkIfSmsPackageExists("id = '" . $id . "'")){
         
         $result = $smsPackage->removeSmsPackage("id = '" . $id . "'");
 
-        if($result)
-        {
-	     
+        if($result){
             echo  success($result,200, "Successful","Successful");
-            
         }else {
-            
             echo badRequest(204, "Delete not successful");
         }
         
     }else {
-        
         echo badRequest(204, "Package Do not Exists");
     }
-    
-    
 }else {
-    
     echo badRequest(204, "User Not Found!");
 }

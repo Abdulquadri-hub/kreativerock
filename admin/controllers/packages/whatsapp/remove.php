@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
-if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null) {
     exit(badRequest(204,'Invalid session data. Proceed to login'));
 }
 
@@ -22,7 +22,7 @@ if($res)
     $id = isset($_REQUEST['id'])  && $_REQUEST['id'] ? $_REQUEST['id'] :  "";
     if($id === "")
     {
-        exit("BAD REQUEST");
+        exit(badRequest(400, "id is required"));
     }
 
     if($whatsPackage->checkIfWhatsAppPackageExists("id = '" . $id . "'"))
