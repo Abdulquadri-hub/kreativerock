@@ -83,7 +83,9 @@ class SmsIntegration {
             'total_registered_users' => $this->getTotalRegisteredUsers(),
             'total_online_users' => $this->getTotalOnlineUsers(),
             'total_sms_accounts' => $this->getTotalSmsAccounts(),
-            'total_whatsapp_accounts' => $this->getTotalWhatsappAccounts()
+            'total_whatsapp_accounts' => $this->getTotalWhatsappAccounts(),
+            'whatsapp_unit_balance' => $this->getWhatsappTotalUnitsBalance($email),
+            'total_whatsappunit_spent' => $this->getWhatsappTotalSpentUnitsQty($email)
         ];
 
         return $stats;
@@ -96,7 +98,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
         if(!$totalPurchasedUnits){
             return 0;
         }
@@ -112,7 +114,7 @@ class SmsIntegration {
             exit;
         }
         
-        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
         if(!$unit){
             return 0;
         }
@@ -126,7 +128,7 @@ class SmsIntegration {
             }
         }
     }
-    
+
     public function getTotalSpentUnitsQty($email){
         $user = $this->db->find($this->usersTable, "email = '$email'");
         if(count($user) < 0 || empty($user)){
@@ -134,7 +136,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
         if(!$totalSpentUnits){
             return 0;
         }
@@ -142,7 +144,7 @@ class SmsIntegration {
             return $totalSpentUnits['total_used_qty'];
         } 
     }
-    
+
     public function deductUnits($email, $unitsToDeduct) {
         $user = $this->db->find($this->usersTable, "email = '$email'");
         if(count($user) < 0 || empty($user)){
@@ -158,7 +160,7 @@ class SmsIntegration {
         $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
         $newBalance = $currentBalance - $unitsToDeduct;
 
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
         if (empty($userUnit)) {
             return false;
         }
@@ -166,10 +168,101 @@ class SmsIntegration {
         $this->db->update($this->userUnitsTable, [
             "total_used_qty" => $totalUsed,
             "total_unit_balance" => $newBalance
-        ], "user_id = '{$user['id']}'");
+        ], "user_id = '{$user['id']}','type' = 'sms'");
     
         return true;
     }
+
+    /** SMS ENDs */
+
+
+
+    /**   whatsapp   */
+
+    public function getTotalWhatsappPurchasedUnitsQty($email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+            exit;
+        }
+        
+        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        if(!$totalPurchasedUnits){
+            return 0;
+        }
+        else{
+            return $totalPurchasedUnits['total_purchased_qty'];
+        }
+    }
+    
+    public function deductWhatsappUnits($email, $unitsToDeduct) {
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return false;
+        }
+        
+        $currentBalance = $this->getTotalUnitsBalance($email);
+
+        if ($currentBalance < $unitsToDeduct) {
+            return false;
+        }
+
+        $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
+        $newBalance = $currentBalance - $unitsToDeduct;
+
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        if (empty($userUnit)) {
+            return false;
+        }
+
+        $this->db->update($this->userUnitsTable, [
+            "total_used_qty" => $totalUsed,
+            "total_unit_balance" => $newBalance
+        ], "user_id = '{$user['id']}','type' = 'whatsapp'");
+    
+        return true;
+    }
+
+    public function getWhatsappTotalSpentUnitsQty($email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+            exit;
+        }
+        
+        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        if(!$totalSpentUnits){
+            return 0;
+        }
+        else{
+            return $totalSpentUnits['total_used_qty'];
+        } 
+    }
+
+    public function getWhatsappTotalUnitsBalance($email){
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+            exit;
+        }
+        
+        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        if(!$unit){
+            return 0;
+        }
+        else{
+            if($unit['total_used_qty'] == 0){
+                // return $this->getTotalPurchasedUnitsQty($email);
+                return $unit['total_unit_balance'];
+            }
+            else{
+                return $unit['total_unit_balance'];
+            }
+        }
+    }
+    
+    
+    /** Whatsapp Ends */
 
     public function getUserUnitsInfo($email){
         $user = $this->db->find($this->usersTable, "email = '$email'");

@@ -129,7 +129,7 @@ class SmsTransaction  {
 	    $postdata["redirect_url"] = $redirectTo. "sms/verifychekoutsms?reference=$ref&packageid=$packageid&callback=$callbackUrl";
 	    
 	    //"channels" => ["card,bank"]
-	    $durl = $url; //."?".$getdata;
+	    // $durl = $url; //."?".$getdata;
 	    $ch = curl_init();
 	    curl_setopt($ch, CURLOPT_URL, "https://api.flutterwave.com/v3/payments");
 	   // curl_setopt($ch, CURLOPT_HEADER, 1);

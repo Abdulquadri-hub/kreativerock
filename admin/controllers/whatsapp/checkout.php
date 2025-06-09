@@ -12,9 +12,10 @@ $WhatsAppPurchase = new WhatsAppPurchase();
 $WhatsAppTransaction = new WhatsAppTransaction();
 $admin = new Administration();
 
-$email = (isset($_REQUEST['user']) && $_REQUEST['user'] !== "" ? $_REQUEST['user'] : "");
+$email = (isset($_REQUEST['elfuseremail']) && $_REQUEST['elfuseremail'] !== "" ? $_REQUEST['elfuseremail'] : "");
+
 if($email == ""){
-    exit(json_encode(["status" => false, "code" => 400, "message" => "Bad Request"]));
+    exit(json_encode(["status" => false, "code" => 400, "message" => "email is required"]));
 }
 
 $res = $user->getUserInfo("email = '" . $email . "'");
