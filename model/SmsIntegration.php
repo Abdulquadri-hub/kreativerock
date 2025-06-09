@@ -87,7 +87,6 @@ class SmsIntegration {
             'whatsapp_unit_balance' => $this->getWhatsappTotalUnitsBalance($email),
             'total_whatsappunit_spent' => $this->getWhatsappTotalSpentUnitsQty($email)
         ];
-
         return $stats;
     }
     
