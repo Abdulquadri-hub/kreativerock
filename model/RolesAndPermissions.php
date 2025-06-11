@@ -22,7 +22,6 @@ class RolesAndPermissions extends dbFunctions {
         return $this->insert('user_roles', $data);
     }
     
-
     public function removeRole($userId, $roleId) {
         $where = "user_id = $userId AND role_id = $roleId";
         return $this->delete('user_roles', $where);
@@ -30,7 +29,7 @@ class RolesAndPermissions extends dbFunctions {
 
     public function createRole($name, $description = '') {
         $data = [
-            'name' => $name,
+            'name' => strtoupper(trim($name)),
             'description' => $description,
             'created_at' => date('Y-m-d H:i:s')
         ];
@@ -70,7 +69,6 @@ class RolesAndPermissions extends dbFunctions {
         return $this->insert('role_permissions', $data);
     }
     
-
     public function removePermissionFromRole($roleId, $permissionId) {
         $where = "role_id = $roleId AND permission_id = $permissionId";
         return $this->delete('role_permissions', $where);
@@ -84,7 +82,6 @@ class RolesAndPermissions extends dbFunctions {
         return $this->query($sql, [$userId]);
     }
     
-
     public function getUserPermissions($userId) {
         $sql = "SELECT DISTINCT p.* FROM permissions p 
                 JOIN role_permissions rp ON p.id = rp.permission_id 

@@ -75,9 +75,7 @@ if($res)
             if($transaction)
             {
                 //
-                
             }else {
-            
                 exit(json_encode(["status" => false, "code" => 500, "message" => "Sms Transaction Not Successful."]));
             }
             

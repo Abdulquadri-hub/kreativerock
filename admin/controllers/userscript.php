@@ -159,7 +159,7 @@ if($res){
     
     $result = $user->create($userData);
     
-    if (is_numeric($result)) {  
+    if ($result) {  
         $data = $user->retrieveByQuerySelector("SELECT * FROM users WHERE email = '" . $user->getEscapedString($userData['email']) . "' LIMIT 1");
         $data = $data[0];
         

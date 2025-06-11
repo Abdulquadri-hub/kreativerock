@@ -23,19 +23,16 @@ if($ver_code === ""){
     //exit(json_encode($resp));
 }
 
-$ver_code = base64_decode($ver_code); //$user->getEscapedString(escape($_POST["vercode"]));
-//$res = $smslog->getSMSLogVerification($phone);
+$ver_code = base64_decode($ver_code); 
 
-//$resemail = $smslog->retrieveByQuerySelector("select * from smslogs where accountnumber = '" . $email . "' AND status LIKE 'EMAILVERIFY' ORDER BY id DESC");
 $resemail = $smslog->retrieveByQuerySelector("select * from verificationlogs where email = '" . $email . "' AND status LIKE 'EMAILVERIFY' ORDER BY id DESC");
-//$ressize = count($res);
 
 if($resemail[0]["verificationcode"] !== $ver_code){
     $resp = array("status" => false,"code" => 204,"message" => "We could not verify the email");
-    
     logoff();
     //exit(json_encode($resp));
 }
+
 $emailresetres = $smslog->updateVerificationLog("status='EMAILVERIFIED'", $resemail[0]["id"]);
 if($emailresetres){
     $user->addUserActivity($email, "Email verification at " . date("Y-m-d H:i:s"), date("Y-m-d H:i:s"), "USER VERIFIED");
@@ -43,8 +40,8 @@ if($emailresetres){
     
     logoff();
     
-    //$resp = array("status" => true,"code" => 200,"message" => "Successful");
-    //exit(json_encode($resp));
+    $resp = array("status" => true,"code" => 200,"message" => "Successful");
+    exit(json_encode($resp));
     
 }else{
     exit(badRequest(204, "Could not reset log"));
