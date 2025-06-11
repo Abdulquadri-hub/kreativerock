@@ -45,3 +45,4 @@ require_once $rootFolder . 'model/SmsIntegration.php';
 require_once $rootFolder . 'model/Logger.php';
 require_once $rootFolder . 'model/Facebook.php';
 require_once $rootFolder . 'model/RolesAndPermissions.php';
+require_once $rootFolder . 'model/smslog.php';

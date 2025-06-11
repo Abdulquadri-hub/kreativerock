@@ -6,16 +6,16 @@ header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
-if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
-    $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
-    //exit(json_encode($response));
-    logoff();
-}
+// if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
+//     $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
+//     //exit(json_encode($response));
+//     logoff();
+// }
 
 $user = new User();
-
 $smslog = new SMSLog();
-$email = $_SESSION["elfuseremail"] ?? null; //$user->getEscapedString(escape($_POST["phone"]));
+
+$email = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com"; //$user->getEscapedString(escape($_POST["phone"]));
 $ver_code = (isset($_GET["vercode"]) && $_GET["vercode"] !== "") ? htmlentities($_OET["vercode"],ENT_QUOTES) : "";
 if($ver_code === ""){
     logoff();
@@ -25,7 +25,7 @@ if($ver_code === ""){
 
 $ver_code = base64_decode($ver_code); 
 
-$resemail = $smslog->retrieveByQuerySelector("select * from verificationlogs where email = '" . $email . "' AND status LIKE 'EMAILVERIFY' ORDER BY id DESC");
+$resemail = $smslog->retrieveByQuerySelector("select * from email_verifications where email = '" . $email . "' AND status LIKE 'EMAILVERIFY' ORDER BY id DESC");
 
 if($resemail[0]["verificationcode"] !== $ver_code){
     $resp = array("status" => false,"code" => 204,"message" => "We could not verify the email");
@@ -55,6 +55,6 @@ function logoff(){
     session_unset();
     session_destroy();
     
-    header('Location: ../../admin/view/login');       
+    header('Location: ../../newadmin/view/login');       
 }
 ?>

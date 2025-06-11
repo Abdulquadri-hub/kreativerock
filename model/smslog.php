@@ -45,16 +45,16 @@ class SMSLog{
 
     /***** Email Verification ****************************************************/
     public function getEmailVerificationInfo($condition){
-        return $this->model->findOne("verificationlogs", $condition);
+        return $this->model->findOne("email_verifications", $condition);
     }
     public function registerEmailVerificationLog($fields, $values){
         return $this->model->insertdata("verificationlogs", $fields, $values);
     }
     public function getEmailLogVerification($accountnumber){
-        return $this->model->findOne("verificationlogs", "accountnumber = '$accountnumber' AND status LIKE 'VERIFICATION'");
+        return $this->model->findOne("email_verifications", "accountnumber = '$accountnumber' AND status LIKE 'VERIFICATION'");
     }   
     public function updateVerificationLog($query, $id){
-        return $this->model->update('verificationlogs', "$query", "WHERE id = '$id' AND status LIKE 'EMAILVERIFY'");
+        return $this->model->update('email_verifications', "$query", "WHERE id = '$id' AND status LIKE 'EMAILVERIFY'");
     }     
     /************* End Email Verification **************************************************************/
     
