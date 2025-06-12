@@ -582,7 +582,7 @@ class User{
         $payload = array(
             "email" => $email,
             "message" => $message,
-            "subject" => "Elfrique Email Verification"
+            "subject" => "KreativeRock Email Verification"
         );
             
         $payload = json_encode($payload);
