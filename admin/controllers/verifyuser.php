@@ -6,16 +6,16 @@ header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
-// if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
-//     $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
-//     //exit(json_encode($response));
-//     logoff();
-// }
+if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
+    $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
+    //exit(json_encode($response));
+    logoff();
+}
 
 $user = new User();
 $smslog = new SMSLog();
 
-$email = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com"; //$user->getEscapedString(escape($_POST["phone"]));
+$email = $_SESSION["elfuseremail"] ?? null; //$user->getEscapedString(escape($_POST["phone"]));
 $ver_code = (isset($_GET["vercode"]) && $_GET["vercode"] !== "") ? htmlentities($_OET["vercode"],ENT_QUOTES) : "";
 if($ver_code === ""){
     logoff();
