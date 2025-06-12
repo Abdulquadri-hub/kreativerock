@@ -8,7 +8,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
 if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
     $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
-    //exit(json_encode($response));
     logoff();
 }
 
