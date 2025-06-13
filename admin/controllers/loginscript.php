@@ -38,6 +38,7 @@ if($userinfo){
             "lastname" => $data["lastname"],
             "othernames" => $data["othernames"],
             "role" => $data["role"],
+            "status" => $data["status"],
             "referralcode" => $data["referralcode"],
             "sessiontoken" => $sessiontoken
             );
