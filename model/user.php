@@ -345,6 +345,8 @@ class User{
         return false;
     }
 
+    // publicf
+
     public function updateUserProfileDetails($userId, $data) {
         if (!$userId || !is_array($data) || empty($data)) {
             return false;
@@ -544,6 +546,8 @@ class User{
         return array_values($processedUsers);
     }
 
+    //  email verifications
+
     public function emailVerification($email, $verificationCode){
         $email = $this->db->escape($email);
         $verificationCode = $this->db->escape($verificationCode);
@@ -627,6 +631,19 @@ class User{
             'tlog' => $tlog
         ]);
     }
+
+    public function getVerificationLog($email){
+        return $this->db->find("email_verifications", "email = '$email' AND status LIKE 'EMAILVERIFY'", "id DESC");
+    }
+
+    public function updateVerificationLog($verificationLogId){
+
+        return $this->db->update('email_verifications', [
+            'status' => "EMAILVERIFIED"
+        ], "id = '$verificationLogId' AND status LIKE 'EMAILVERIFY'");     
+    }
+
+   /** Email verification ends */
 
     public function validate($data)
     {

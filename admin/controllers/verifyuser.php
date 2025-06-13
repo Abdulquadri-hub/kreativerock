@@ -6,41 +6,37 @@ header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
-if(isset($_SESSION["elfuseremail"]) && $_SESSION["elfuseremail"] === null || $_SESSION["elfuseremail"] === ""){
-    $response = array("status" => false,"code" => 204,"message" => "Session expired. Proceed to login");
-    logoff();
-}
-
 $user = new User();
 $smslog = new SMSLog();
 
-$email = $_SESSION["elfuseremail"] ?? null; //$user->getEscapedString(escape($_POST["phone"]));
-$ver_code = (isset($_GET["vercode"]) && $_GET["vercode"] !== "") ? htmlentities($_OET["vercode"],ENT_QUOTES) : "";
+$ver_code = (isset($_GET["vercode"]) && $_GET["vercode"] !== "") ? htmlentities($_GET["vercode"],ENT_QUOTES) : "";
+$ver_email = (isset($_GET["email"]) && $_GET["email"] !== "") ? htmlentities($_GET["email"],ENT_QUOTES) : "";
+
 if($ver_code === ""){
-    logoff();
     $resp = array("status" => false,"code" => 204,"message" => "Email verification code is invalid");
-    //exit(json_encode($resp));
+    exit(badRequest($resp));
 }
 
 $ver_code = base64_decode($ver_code); 
+$ver_email = base64_decode($ver_email); 
 
-$resemail = $smslog->retrieveByQuerySelector("select * from email_verifications where email = '" . $email . "' AND status LIKE 'EMAILVERIFY' ORDER BY id DESC");
+$resemail = $user->getVerificationLog($ver_email);
 
-if($resemail[0]["verificationcode"] !== $ver_code){
+if($resemail["verificationcode"] !== $ver_code){
     $resp = array("status" => false,"code" => 204,"message" => "We could not verify the email");
-    logoff();
-    //exit(json_encode($resp));
+    exit(json_encode($resp));
 }
 
-$emailresetres = $smslog->updateVerificationLog("status='EMAILVERIFIED'", $resemail[0]["id"]);
+$emailresetres = $user->updateVerificationLog($resemail["id"]);
 if($emailresetres){
-    $user->addUserActivity($email, "Email verification at " . date("Y-m-d H:i:s"), date("Y-m-d H:i:s"), "USER VERIFIED");
-    $user->updateUserDetails("status = 'VERIFIED'", $_SESSION["user_id"]);
+    $user->addUserActivity($ver_email, "Email verification at " . date("Y-m-d H:i:s"), date("Y-m-d H:i:s"), "USER VERIFIED");
+
+    $userId = $user->getUserIdByEmail($ver_email);
+    $user->updateUserDetails("status = 'VERIFIED'", $userId);
     
-    logoff();
-    
-    $resp = array("status" => true,"code" => 200,"message" => "Successful");
-    exit(json_encode($resp));
+    redirect();
+    // $resp = array("status" => true,"code" => 200,"message" => "Successful");
+    // exit(success($resp));
     
 }else{
     exit(badRequest(204, "Could not reset log"));
@@ -56,4 +52,7 @@ function logoff(){
     
     header('Location: ../../newadmin/view/login');       
 }
-?>
+
+function redirect(){
+    header('Location: ../../newadmin/view/login');       
+}
