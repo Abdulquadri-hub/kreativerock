@@ -97,7 +97,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
+        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
         if(!$totalPurchasedUnits){
             return 0;
         }
@@ -113,7 +113,7 @@ class SmsIntegration {
             exit;
         }
         
-        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
+        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
         if(!$unit){
             return 0;
         }
@@ -135,7 +135,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
+        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
         if(!$totalSpentUnits){
             return 0;
         }
@@ -159,7 +159,7 @@ class SmsIntegration {
         $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
         $newBalance = $currentBalance - $unitsToDeduct;
 
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'sms'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
         if (empty($userUnit)) {
             return false;
         }
@@ -167,7 +167,7 @@ class SmsIntegration {
         $this->db->update($this->userUnitsTable, [
             "total_used_qty" => $totalUsed,
             "total_unit_balance" => $newBalance
-        ], "user_id = '{$user['id']}','type' = 'sms'");
+        ], "user_id = '{$user['id']}' AND type = 'sms'");
     
         return true;
     }
@@ -185,7 +185,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         if(!$totalPurchasedUnits){
             return 0;
         }
@@ -209,7 +209,7 @@ class SmsIntegration {
         $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
         $newBalance = $currentBalance - $unitsToDeduct;
 
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         if (empty($userUnit)) {
             return false;
         }
@@ -217,7 +217,7 @@ class SmsIntegration {
         $this->db->update($this->userUnitsTable, [
             "total_used_qty" => $totalUsed,
             "total_unit_balance" => $newBalance
-        ], "user_id = '{$user['id']}','type' = 'whatsapp'");
+        ], "user_id = '{$user['id']}' AND type = 'whatsapp'");
     
         return true;
     }
@@ -229,7 +229,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         if(!$totalSpentUnits){
             return 0;
         }
@@ -245,7 +245,7 @@ class SmsIntegration {
             exit;
         }
         
-        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}','type' = 'whatsapp'");
+        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         if(!$unit){
             return 0;
         }

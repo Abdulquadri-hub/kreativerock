@@ -126,7 +126,7 @@ class WhatsAppTransaction  {
 	    $postdata["email"] = $email;
 	    $postdata["currency"] = $currency;
 	    $postdata["customer"] = $customer;
-	    $postdata["redirect_url"] = $redirectTo. "whatsapp/verifychekout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
+	    $postdata["redirect_url"] = $redirectTo. "whatsapp/verifycheckout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
 	    
 	    //"channels" => ["card,bank"]
 	    // $durl = $url; //."?".$getdata;
