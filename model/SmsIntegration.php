@@ -274,7 +274,9 @@ class SmsIntegration {
             "status" => true,
             "code" => 200,
             "unit_balance" => $this->getTotalUnitsBalance($email),
-            "unit_spent" => $this->getTotalSpentUnitsQty($email)
+            "whatsappunit_balance" => $this->getWhatsappTotalUnitsBalance($email),
+            "unit_spent" => $this->getTotalSpentUnitsQty($email),
+            "whatsappunit_spent" => $this->getWhatsappTotalSpentUnitsQty($email)
         ];
     }
     
