@@ -17,7 +17,7 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
             <td style="padding: 40px 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px 16px 0 0; text-align: center;">
                 <img src="https://comeandsee.com.ng/kreativerock/assets/images/logo.svg" alt="KreativeRock Logo" style="height: 48px; margin-bottom: 25px;">
                 <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
-                    Welcome to KreativeRock! 🎉
+                    Welcome to KreativeRock! 
                 </h1>
                 <p style="color: #d1fae5; margin: 15px 0 0; font-size: 18px; font-weight: 500;">Your account is now active</p>
             </td>
@@ -38,7 +38,7 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
 
                 <!-- Quick Start Guide -->
                 <div style="background: #f8f9ff; padding: 25px; border-radius: 12px; margin: 30px 0;">
-                    <h3 style="margin: 0 0 20px; color: #4f46e5; font-size: 20px; font-weight: 700;">🚀 Quick Start Guide</h3>
+                    <h3 style="margin: 0 0 20px; color: #4f46e5; font-size: 20px; font-weight: 700;">Quick Start Guide</h3>
                     <div style="margin-bottom: 15px;">
                         <div style="display: inline-block; width: 24px; height: 24px; background: #10b981; border-radius: 50%; text-align: center; margin-right: 12px; vertical-align: middle;">
                             <span style="color: white; font-size: 14px; font-weight: bold; line-height: 24px;">1</span>
@@ -64,7 +64,7 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
                 <!-- Support Info -->
                 <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 30px;">
                     <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
-                        <strong>💡 Need Help?</strong> Our support team is here to help you get started. Don\'t hesitate to reach out if you have any questions!
+                        <strong>Need Help?</strong> Our support team is here to help you get started. Don\'t hesitate to reach out if you have any questions!
                     </p>
                 </div>
             </td>
@@ -80,9 +80,9 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
                         <a href="tel:+1234567890" style="color: #4f46e5; text-decoration: none; font-weight: 600;">+123 456 7890</a>
                     </p>
                     <div style="margin: 20px 0;">
-                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;">📘 Facebook</a>
-                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;">🐦 Twitter</a>
-                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;">💼 LinkedIn</a>
+                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;"> Facebook</a>
+                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;"> Twitter</a>
+                        <a href="#" style="display: inline-block; margin: 0 10px; color: #64748b; text-decoration: none;"> LinkedIn</a>
                     </div>
                     <div style="border-top: 1px solid #e8e9ff; padding-top: 20px; margin-top: 20px;">
                         <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">
@@ -150,7 +150,7 @@ public  function getVerificationEmailTemplate($userName, $verificationCode, $ver
 
                 <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-top: 30px;">
                     <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                        <strong>⚠️ Important:</strong> This verification link will expire in 24 hours. If you didn\'t create an account with us, please ignore this email.
+                        <strong> Important:</strong> This verification link will expire in 24 hours. If you didn\'t create an account with us, please ignore this email.
                     </p>
                 </div>
             </td>
