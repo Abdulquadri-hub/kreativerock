@@ -37,8 +37,8 @@ if($emailresetres){
     $userDetails =  $user->getUserByEmail($ver_email);
     $userName = $userDetails['firstname'] . ' ' . $userDetails['lastname'];
 
-    $dashboardLink = "https://comeandsee.com.ng/kreativerock/newadmin/view/";
-    $profileLink = "https://comeandsee.com.ng/kreativerock/newadmin/view/user/profile";
+    $dashboardLink = "";
+    $profileLink = "";
     
     $user->sendWelcomeEmail($ver_email, $userName, $dashboardLink, $profileLink);
 

@@ -15,7 +15,7 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
         <!-- Header -->
         <tr>
             <td style="padding: 40px 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px 16px 0 0; text-align: center;">
-                <img src="https://nglohitech.com/elfrique/home/images/logo.png" alt="KreativeRock Logo" style="height: 48px; margin-bottom: 25px;">
+                <img src="https://comeandsee.com.ng/kreativerock/assets/images/logo.svg" alt="KreativeRock Logo" style="height: 48px; margin-bottom: 25px;">
                 <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
                     Welcome to KreativeRock! 🎉
                 </h1>
@@ -60,14 +60,6 @@ public function getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink)
                 </div>
 
                 <!-- CTA Buttons -->
-                <div style="text-align: center; margin: 35px 0;">
-                    <a href="' . $dashboardLink . '" style="display: inline-block; background: #4f46e5; color: #ffffff; padding: 16px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; margin: 0 10px 10px 0; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
-                        🏠 Go to Dashboard
-                    </a>
-                    <a href="' . $profileLink . '" style="display: inline-block; background: #10b981; color: #ffffff; padding: 16px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; margin: 0 10px 10px 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                        👤 Complete Profile
-                    </a>
-                </div>
 
                 <!-- Support Info -->
                 <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-top: 30px;">
@@ -120,7 +112,7 @@ public  function getVerificationEmailTemplate($userName, $verificationCode, $ver
             <!-- Header -->
         <tr>
             <td style="padding: 40px 30px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border-radius: 16px 16px 0 0; text-align: center;">
-                <img src="https://nglohitech.com/elfrique/home/images/logo.png" alt="KreativeRock Logo" style="height: 48px; margin-bottom: 25px;">
+                <img src="https://comeandsee.com.ng/kreativerock/assets/images/logo.svg" alt="KreativeRock Logo" style="height: 48px; margin-bottom: 25px;">
                 <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
                     Verify Your Email
                 </h1>
