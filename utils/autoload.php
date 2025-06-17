@@ -46,3 +46,4 @@ require_once $rootFolder . 'model/Logger.php';
 require_once $rootFolder . 'model/Facebook.php';
 require_once $rootFolder . 'model/RolesAndPermissions.php';
 require_once $rootFolder . 'model/smslog.php';
+require_once $rootFolder . 'model/Email_Template.php';

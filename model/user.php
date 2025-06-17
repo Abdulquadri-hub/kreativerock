@@ -5,11 +5,13 @@ class User{
     private $db;
     protected $roles_and_permission;
     private $usersTable = "users";
+    private $emailTemplate; 
 
     public function __construct(){
         $this->model = new Model();
         $this->db = new dbFunctions();
         $this->roles_and_permission = new RolesAndPermissions();
+        $this->emailTemplate = new Email_Template(); 
     }
     
     public function login($email, $password){
@@ -198,6 +200,15 @@ class User{
         return $user['id'];
     }
 
+    public function getUserByEmail($email){
+        $email = $this->db->escape($email);
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(!empty($user)){
+            return $user;
+        }
+        return [];
+    }
+
     public function create($userData)
     {
         $validation = $this->validate($userData);
@@ -238,8 +249,11 @@ class User{
             $verificationCode = $this->generateVerificationCode();
             $this->saveVerificationCode($userData['email'], $verificationCode);
             
-            $message = "Your account verification code is: " . $verificationCode;
-            $this->sendVerificationLink($userData['email'], $message, $verificationCode);
+            // $message = "Your account verification code is: " . $verificationCode;
+            // $this->sendVerificationLink($userData['email'], $message, $verificationCode);
+
+            $userName = $userData['firstname'] . ' ' . $userData['lastname'];
+            $this->sendVerificationLink($userData['email'], $verificationCode, $userName);
             
             // Generate API key
             $apiKeyManager = new ApiKeyManager();
@@ -390,8 +404,8 @@ class User{
         return true;
     }
 
-    public function getUser($userId) {
-        
+    public function getUser($userId)
+    {
         $sql = "
             SELECT 
                 u.*,
@@ -409,22 +423,21 @@ class User{
             WHERE u.id = ?
             ORDER BY r.id, p.id
         ";
-        
+    
         $result = $this->db->query($sql, [$userId]);
-        
-        if(!$result) {
+    
+        if (!$result) {
             return null;
         }
-        
+    
         $userData = null;
         $roles = [];
         $permissions = [];
         $processedRoles = [];
         $processedPermissions = [];
-        
-        foreach($result as $row) {
-
-            if(!$userData) {
+    
+        foreach ($result as $row) {
+            if (!$userData) {
                 $userData = [
                     'id' => $row['id'],
                     'email' => $row['email'],
@@ -438,8 +451,8 @@ class User{
                     'referralcode' => $row['referralcode']
                 ];
             }
-            
-            if($row['role_id'] && !in_array($row['role_id'], $processedRoles)) {
+    
+            if ($row['role_id'] && !in_array($row['role_id'], $processedRoles)) {
                 $roles[] = [
                     'id' => $row['role_id'],
                     'name' => $row['role_name'],
@@ -447,8 +460,8 @@ class User{
                 ];
                 $processedRoles[] = $row['role_id'];
             }
-            
-            if($row['permission_id'] && !in_array($row['permission_id'], $processedPermissions)) {
+    
+            if ($row['permission_id'] && !in_array($row['permission_id'], $processedPermissions)) {
                 $permissions[] = [
                     'id' => $row['permission_id'],
                     'name' => $row['permission_name'],
@@ -457,14 +470,25 @@ class User{
                 $processedPermissions[] = $row['permission_id'];
             }
         }
-        
-        if($userData) {
+    
+        if ($userData) {
             $userData['roles'] = $roles;
             $userData['permissions'] = $permissions;
+    
+            // Fetch SMS transactions by email
+            $smsSql = "SELECT * FROM sms_transactions WHERE user = ?";
+            $smsTransactions = $this->db->query($smsSql, [$userData['email']]);
+    
+            $whatsappSql = "SELECT * FROM whatsapp_transactions WHERE user = ?";
+            $whatsappTransactions = $this->db->query($whatsappSql, [$userData['email']]);
+    
+            $userData['sms_transactions'] = $smsTransactions ?: [];
+            $userData['whatsapp_transactions'] = $whatsappTransactions ?: [];
         }
-        
+    
         return $userData;
     }
+
     
     public function getAllUsers() {
         $sql = "
@@ -569,7 +593,7 @@ class User{
         return false;
     }
 
-    public function sendVerificationLink($email, $message, $verificationcode){
+    public function sendVerificationLink_old($email, $message, $verificationcode){
         $emailencoded = base64_encode($email);
         $vercode = base64_encode($verificationcode);
 
@@ -643,6 +667,82 @@ class User{
         ], "id = '$verificationLogId' AND status LIKE 'EMAILVERIFY'");     
     }
 
+    public function sendWelcomeEmail($email, $userName, $dashboardLink, $profileLink) {
+        // Use the email template for welcome message
+        $htmlMessage = $this->emailTemplate->getWelcomeEmailTemplate($userName, $dashboardLink, $profileLink);
+        
+        $payload = array(
+            "email" => $email,
+            "message" => $htmlMessage,
+            "subject" => "🎉 Welcome to KreativeRock - Your Account is Active!"
+        );
+            
+        $payload = json_encode($payload);
+        
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://comeandsee.com.ng/mailer/sendmailtokreativerock.php",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => array(
+              "cache-control: no-cache",
+              "content-type: application/json"
+            ),
+        ));
+        
+        $result = curl_exec($curl);
+        curl_close($curl);
+        return $result;
+    }
+
+    public function sendVerificationLink($email, $verificationCode, $userName = ''){
+        $emailencoded = base64_encode($email);
+        $vercode = base64_encode($verificationCode);
+
+        $local = "http://localhost/kreativerock/admin/controllers/verifyuser.php?email=$emailencoded&vercode=$vercode";
+        $live = "https://comeandsee.com.ng/kreativerock/admin/controllers/verifyuser.php?email=$emailencoded&vercode=$vercode";
+        
+        $verificationLink = $live; // Change to $local for local testing
+        
+        // Use the email template for verification
+        $htmlMessage = $this->emailTemplate->getVerificationEmailTemplate($userName, $verificationCode, $verificationLink);
+        
+        $payload = array(
+            "email" => $email,
+            "message" => $htmlMessage,
+            "subject" => "🔐 KreativeRock - Verify Your Email Address"
+        );
+            
+        $payload = json_encode($payload);
+        
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://comeandsee.com.ng/mailer/sendmailtokreativerock.php",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => array(
+              "cache-control: no-cache",
+              "content-type: application/json"
+            ),
+        ));
+        
+        $result = curl_exec($curl);
+        curl_close($curl);
+        return $result;
+    }
+
    /** Email verification ends */
 
     public function validate($data)
@@ -677,4 +777,5 @@ class User{
     
         return empty($errors) ? true : $errors;
     }
+
 }

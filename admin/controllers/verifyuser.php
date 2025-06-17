@@ -33,7 +33,15 @@ if($emailresetres){
 
     $userId = $user->getUserIdByEmail($ver_email);
     $user->updateUserDetails("status = 'VERIFIED'", $userId);
+
+    $userDetails =  $user->getUserByEmail($ver_email);
+    $userName = $userDetails['firstname'] . ' ' . $userDetails['lastname'];
+
+    $dashboardLink = "https://comeandsee.com.ng/kreativerock/newadmin/view/";
+    $profileLink = "https://comeandsee.com.ng/kreativerock/newadmin/view/user/profile";
     
+    $user->sendWelcomeEmail($ver_email, $userName, $dashboardLink, $profileLink);
+
     redirect();
     // $resp = array("status" => true,"code" => 200,"message" => "Successful");
     // exit(success($resp));
