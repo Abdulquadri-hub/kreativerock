@@ -30,7 +30,7 @@ class Model extends DBClass
 
         $result = $this->conn->query($query) or errorhandler($this->conn->error);
         $data = array();
-        if ($result) {
+        if ($result) {   
             while ($row = $result->fetch_assoc()) {
                 $data[] = $row;
             }
