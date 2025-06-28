@@ -48,7 +48,7 @@ class SmsTransaction  {
         return $res;
     }
     
-    public function createOrUpdateUserUnits($reference, $email){
+    public function createOrUpdateUserSMSUnits($reference, $email){
         
         $user = $this->db->find($this->usersTable, "email = '$email'");
         if(count($user) < 0 || empty($user)){
@@ -65,7 +65,7 @@ class SmsTransaction  {
             return ['status' => false, 'code' => 404, 'message' => 'Sms purchased package transaction not found.'];
         }
         
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
         
         $qtyPurchased = $smsPurchased['qty'] ?? 0;
         $qtyUsed = $smsTransaction['qtyout'] ?? 0;
@@ -87,7 +87,7 @@ class SmsTransaction  {
                 'type' => 'sms'
             ];
     
-            $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}'");
+            $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}' AND type = 'sms'");
         } else {
        
             $insertData = [

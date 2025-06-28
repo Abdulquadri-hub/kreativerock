@@ -58,7 +58,7 @@ if($status === "failed")
                                                     AND reference = " .$purchasedPackage['transactionref']." ");
                 }
                
-                $smsTransaction->createOrUpdateUserUnits($reference, $email);
+                $smsTransaction->createOrUpdateUserSMSUnits($reference, $email);
             }
             
             $flutterResponse = json_encode($datarow["data"]);

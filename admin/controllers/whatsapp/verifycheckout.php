@@ -56,7 +56,7 @@ if($status === "failed")
                                                     AND reference = " .$purchasedPackage['transactionref']." ");
                 }
                
-                $whatsAppTransaction->createOrUpdateUserUnits($reference, $email);
+                $whatsAppTransaction->createOrUpdateUserWhatsappUnits($reference, $email);
             }
             
             $flutterResponse = json_encode($datarow["data"]);

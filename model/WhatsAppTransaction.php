@@ -48,7 +48,7 @@ class WhatsAppTransaction  {
         return $res;
     }
     
-    public function createOrUpdateUserUnits($reference, $email){
+    public function createOrUpdateUserWhatsappUnits($reference, $email){
         
         $user = $this->db->find($this->usersTable, "email = '$email'");
         if(count($user) < 0 || empty($user)){
@@ -65,7 +65,7 @@ class WhatsAppTransaction  {
             return ['status' => false, 'code' => 404, 'message' => 'Sms purchased package transaction not found.'];
         }
         
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         
         $qtyPurchased = $smsPurchased['qty'] ?? 0;
         $qtyUsed = $WhatsAppTransaction['qtyout'] ?? 0;
@@ -87,7 +87,7 @@ class WhatsAppTransaction  {
                 'type' => 'whatsapp'
             ];
     
-            $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}'");
+            $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}' AND type = 'whatsapp'");
         } else {
        
             $insertData = [
