@@ -14,13 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/kreativerock/utils/autoload.php";
 
-// if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
-//     exit(badRequest(401, 'Invalid session data. Proceed to login'));
-// }
+if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
+    exit(badRequest(401, 'Invalid session data. Proceed to login'));
+}
 
 try {
     $transactions = new Transactions();
-    $userEmail = $_SESSION["elfuseremail"] ?? "abdulquadri.aq@gmail.com";
+    $userEmail = $_SESSION["elfuseremail"] ?? NULL;
     
     // Determine the action based on request
     $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'get_transactions';
