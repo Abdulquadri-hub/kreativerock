@@ -136,6 +136,7 @@ class Contact {
         $data['user_id'] = $importer['id'];
         $data['type'] = 'FORM';
         $data['contactsid'] = $contactsId; 
+        $data['segment_id'] = $contactData['segment_id']; 
                 
         $contactId = $this->insertContact($data); 
         
@@ -285,6 +286,10 @@ class Contact {
             $errors[] = 'lastname is required';
         }
 
+        // if (empty($contact['segment_id']) || $contact['segment_id'] == "") {
+        //     $errors[] = 'Segment id is required';
+        // }
+
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
@@ -322,7 +327,7 @@ class Contact {
        return $this->db->insert($this->contactsTable, $contactData);
     }
     
-    private function updateContact(array $data, string $contactsId): bool {
+    private function updateContact(array $data, string $contactsId) {
         try {
             return $this->db->update($this->contactsTable, $data, "contactsid = '$contactsId'");
         } catch (Exception $e) {

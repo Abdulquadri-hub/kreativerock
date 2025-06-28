@@ -79,12 +79,12 @@ class SmsIntegration {
     public function getDashboardStats($email) {
         $stats = [
             'total_unit_spent' => $this->getTotalSpentUnitsQty($email),
-            'unit_balance' => $this->getTotalUnitsBalance($email),
+            'unit_balance' => $this->getTotalPurchasedUnitsQty($email),
             'total_registered_users' => $this->getTotalRegisteredUsers(),
             'total_online_users' => $this->getTotalOnlineUsers(),
             'total_sms_accounts' => $this->getTotalSmsAccounts(),
             'total_whatsapp_accounts' => $this->getTotalWhatsappAccounts(),
-            'whatsapp_unit_balance' => $this->getWhatsappTotalUnitsBalance($email),
+            'whatsapp_unit_balance' => $this->getTotalWhatsappPurchasedUnitsQty($email),
             'total_whatsappunit_spent' => $this->getWhatsappTotalSpentUnitsQty($email)
         ];
         return $stats;

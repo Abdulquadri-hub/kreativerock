@@ -353,7 +353,7 @@ class Campaign {
         return $this->sendNow($campaignId, $email);
     }
 
-    private function validateParams($params) {+
+    private function validateParams($params) {
         $this->errors = [];
         
         if (empty($params['segment_id'])) {
