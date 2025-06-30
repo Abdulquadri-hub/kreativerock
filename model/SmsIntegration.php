@@ -119,8 +119,7 @@ class SmsIntegration {
         }
         else{
             if($unit['total_used_qty'] == 0){
-                // return $this->getTotalPurchasedUnitsQty($email);
-                return $unit['total_unit_balance'];
+                return $unit['total_purchased_qty'];
             }
             else{
                 return $unit['total_unit_balance'];
@@ -151,7 +150,7 @@ class SmsIntegration {
         }
         
         $currentBalance = $this->getTotalUnitsBalance($email);
-echo json_encode($currentBalance);
+
         if ($currentBalance < $unitsToDeduct) {
             return false;
         }
