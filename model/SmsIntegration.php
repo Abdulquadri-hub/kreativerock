@@ -151,7 +151,7 @@ class SmsIntegration {
         }
         
         $currentBalance = $this->getTotalUnitsBalance($email);
-
+echo json_encode($currentBalance);
         if ($currentBalance < $unitsToDeduct) {
             return false;
         }
