@@ -471,14 +471,18 @@ class Campaign {
         //         'incompatible_numbers' => $incompatibleNumbers
         //     ];
         // }        
-                
-        if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
-            return ['status' => false, 'message' => 'Insufficient SMS units'];
-        }
 
         if ($campaign['channel'] === 'whatsapp') {
+            if (!$this->smsIntegration->deductWhatsappUnits($email, $requiredUnits)) {
+                return ['status' => false, 'message' => 'Insufficient whatsapp units'];
+            }
             return $this->whatsAppCampaign($campaign, $phoneNumbers);
         } else {
+
+            if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
+                return ['status' => false, 'message' => 'Insufficient sms units'];
+            }
+
             return $this->sMsCampaign($campaign, $phoneNumbers);
         }
     }

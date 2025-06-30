@@ -200,13 +200,13 @@ class SmsIntegration {
             return false;
         }
         
-        $currentBalance = $this->getTotalUnitsBalance($email);
+        $currentBalance = $this->getWhatsappTotalUnitsBalance($email);
 
         if ($currentBalance < $unitsToDeduct) {
             return false;
         }
 
-        $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
+        $totalUsed = $this->getWhatsappTotalSpentUnitsQty($email) + $unitsToDeduct;
         $newBalance = $currentBalance - $unitsToDeduct;
 
         $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'whatsapp'");
@@ -259,7 +259,7 @@ class SmsIntegration {
             }
         }
     }
-    
+
     
     /** Whatsapp Ends */
 
