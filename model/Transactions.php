@@ -134,7 +134,7 @@ class Transactions extends dbFunctions {
 	    $postdata["email"] = $email;
 	    $postdata["currency"] = $currency;
 	    $postdata["customer"] = $customer;
-	    $postdata["redirect_url"] = $redirectTo. "payment/verifycheckout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
+	    $postdata["redirect_url"] = $redirectTo. "units/verifycheckout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
 	    
 	    //"channels" => ["card,bank"]
 	    // $durl = $url; //."?".$getdata;

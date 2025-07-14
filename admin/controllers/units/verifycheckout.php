@@ -31,9 +31,7 @@ if($reference === "-"){
 $fluttercon = $admin->getFlutterInfo("gateway='FLUTTERWAVE'");
 $skey = $fluttercon["secretkey"];
 
-if($status === "failed")
-{
-   
+if($status === "failed"){
     $redirectTo =  $callbackUrl . "&packageid=$packageid&status=$status";
     header("Location: $redirectTo");
     
