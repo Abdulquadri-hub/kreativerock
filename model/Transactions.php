@@ -3,14 +3,167 @@
 class Transactions extends dbFunctions {
     
     private $usersTable = 'users';
-    private $whatsappTransactionsTable = 'whatsapp_transactions';
-    private $smsTransactionsTable = 'sms_transactions';
     private $rolesAndPermissions;
-
+    public $model;
+    private $db;
+    private $transactionsTable = 'transactions';
+    private $userUnitsTable = 'user_units';
+    private $purchasesTable = 'purchases';
+    
     public function __construct(){
         parent::__construct();
         $this->rolesAndPermissions = new RolesAndPermissions();
+        $this->model = new Model();
+        $this->db = new dbFunctions();
     }
+        
+    public function getTransactionInfo($condition){
+        return $this->model->findOne($this->transactionsTable, $condition);
+    }
+
+    public function checkIfTransactionExists($condition){
+        return count($this->model->findOne($this->transactionsTable, $condition)) > 0 ? true : false;
+    }
+
+    public function registerTransaction($fields, $values){
+        return $this->model->insertdata($this->transactionsTable, $fields, $values);
+    }
+
+    public function removeTransaction($condition){
+        return $this->model->deletedata($this->transactionsTable, $condition);
+    }
+
+    public function retrieveAllTransaction($pageno, $limit){
+        $data = $this->model->paginate($this->transactionsTable, " 1 ORDER BY id ASC", $pageno, $limit);
+        return $data;
+    }
+
+    public function retrieveTransactionByStatus($status, $pageno, $limit){
+        $data = $this->model->paginate($this->transactionsTable, "status LIKE '$status' ORDER BY id ASC", $pageno, $limit);
+        return $data;
+    } 
+
+    public function retrieveTransactionByQuery($query, $pageno, $limit,$field = "*"){
+        $data = $this->model->paginate($this->transactionsTable, $query, $pageno, $limit,$field);
+        return $data;
+    }  
+      
+    public function updateTransactionDetails($query, $id){
+        return $this->model->update($this->transactionsTable, $query, "WHERE id = $id");
+    } 
+    
+    public function retrieveByQuerySelector($query){
+        $res = $this->model->exec_query($query);
+        return $res;
+    }
+    
+    public function createOrUpdateUserUnits($reference, $email){
+        
+        $user = $this->db->find($this->usersTable, "email = '$email'");
+        if(count($user) < 0 || empty($user)){
+            return ['status' => false, 'code' => 404, 'message' => 'User not found.'];
+        }
+        
+        $purchased = $this->db->find($this->purchasesTable, "transactionref = '$reference'");
+        if(!$purchased){
+            return ['status' => false, 'code' => 404, 'message' => 'Purchased package not found.'];
+        }
+        
+        $Transaction = $this->db->find($this->transactionsTable, "reference = '$reference' AND status = 'COMPLETED'");
+        if(!$Transaction){
+            return ['status' => false, 'code' => 404, 'message' => 'Purchased package transaction not found.'];
+        }
+        
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
+        
+        $qtyPurchased = $purchased['qty'] ?? 0;
+        $qtyUsed = $Transaction['qtyout'] ?? 0;
+        $amountSpent = $purchased['amount'] ?? 0.00;
+        $currentDate = date('Y-m-d H:i:s');
+
+        if (!empty($userUnit)) {
+            
+            $updatedTotalPurchased = $userUnit['total_purchased_qty'] + $qtyPurchased;
+            $updatedTotalUsed = $userUnit['total_used_qty'] + $qtyUsed;
+            $updatedTotalAmountSpent = $userUnit['total_amount_spent'] + $amountSpent;
+
+             $updateData = [
+                'total_purchased_qty' => $updatedTotalPurchased,
+                'total_used_qty' => $updatedTotalUsed,
+                'total_amount_spent' => $updatedTotalAmountSpent,
+                'last_transaction_date' => $currentDate,
+                'updated_at' => $currentDate,
+                'type' => 'sms'
+            ];
+    
+            $this->db->update($this->userUnitsTable, $updateData, "user_id = '{$user['id']}' AND type = 'sms'");
+        } else {
+       
+            $insertData = [
+                'user_id' => $user['id'],
+                'total_purchased_qty' => $qtyPurchased,
+                'total_used_qty' => $qtyUsed,
+                'total_amount_spent' => $amountSpent,
+                'last_transaction_date' => $currentDate,
+                'created_at' => $currentDate,
+                'updated_at' => $currentDate,
+            ];
+            
+            $this->db->insert($this->userUnitsTable, $insertData);
+        }
+    }
+    
+    public function makePayment($ref,$amount,$email,$phone,$customername,$currency,$skey,$packageid,$callbackUrl)
+    { 
+        
+	    $headers = array("Authorization: Bearer $skey","Content-Type: application/json");
+	    $postdata = array(
+	       "tx_ref" => "", 
+		   "amount" => "", 
+		   "email" => "",
+		   "currency" => "",
+		   "customer" => "",
+		   "redirect_url" => ""
+	    );  
+	    
+	    $redirectTo ="https://comeandsee.com.ng/kreativerock/admin/controllers/";
+	
+	    $customer = array("email"=>$email,"name"=>$customername, "phonenumber"=>$phone);
+	    $postdata["tx_ref"] = $ref;
+	    $postdata["amount"] = $amount;
+	    $postdata["email"] = $email;
+	    $postdata["currency"] = $currency;
+	    $postdata["customer"] = $customer;
+	    $postdata["redirect_url"] = $redirectTo. "payment/verifycheckout?reference=$ref&packageid=$packageid&callback=$callbackUrl";
+	    
+	    //"channels" => ["card,bank"]
+	    // $durl = $url; //."?".$getdata;
+	    $ch = curl_init();
+	    curl_setopt($ch, CURLOPT_URL, "https://api.flutterwave.com/v3/payments");
+	   // curl_setopt($ch, CURLOPT_HEADER, 1);
+	    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);	
+	   //curl_setopt ($ch, CURLOPT_FOLLOWLOCATION, 1);
+	   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	   curl_setopt ($ch, CURLOPT_POST, 1); 
+	   curl_setopt ($ch, CURLOPT_POSTFIELDS, json_encode($postdata));
+	
+	   $result = curl_exec($ch);
+	   curl_close($ch);
+	   return $result;    
+    } 
+    
+    public function verifyPayment($transaction_id,$skey)
+    {
+        $headers = array("Authorization: Bearer $skey");
+    
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api.flutterwave.com/v3/transactions/" . $transaction_id . "/verify");
+	    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);	
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;    
+    } 
 
     public function getAllTransactions($request, string $email){
         $email = $this->escape($email);
@@ -29,21 +182,15 @@ class Transactions extends dbFunctions {
         
         $transactionType = $filters['type'];
         
-        if ($transactionType === 'both') {
-            return $this->getCombinedTransactions($filters);
-        } elseif ($transactionType === 'whatsapp') {
-            return $this->getWhatsAppTransactions($filters);
-        } elseif ($transactionType === 'sms') {
-            return $this->getSmsTransactions($filters);
-        } else {
-            return badRequest(400, 'Invalid transaction type specified');
-        }
+        if ($transactionType === 'all') {
+            return $this->getTransactions($filters);
+        } 
     }
 
     private function extractFilters($request){
         return [
-            'type' => isset($request['type']) && in_array($request['type'], ['whatsapp', 'sms', 'both']) 
-                     ? $request['type'] : 'both',
+            'type' => isset($request['type']) && in_array($request['type'], ['all']) 
+                     ? $request['type'] : 'all',
             'status' => isset($request['status']) && $request['status'] !== "" 
                        ? $this->escape($request['status']) : "",
             'reference' => isset($request['reference']) && $request['reference'] !== "" 
@@ -61,74 +208,16 @@ class Transactions extends dbFunctions {
         ];
     }
 
-    private function getWhatsAppTransactions($filters){
-        $query = "SELECT *, 'whatsapp' as transaction_type FROM {$this->whatsappTransactionsTable}";
-        $whereConditions = $this->buildWhereConditions($filters);
-        
-        if (!empty($whereConditions)) {
-            $query .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-        
-        $query .= " ORDER BY id DESC LIMIT {$filters['limit']} OFFSET {$filters['offset']}";
-        
-        $result = $this->query($query);
-        
-        if ($result) {
-            return [
-                'status' => true,
-                'code' => 200,
-                'message' => 'WhatsApp transactions retrieved successfully',
-                'data' => $result,
-                'type' => 'whatsapp'
-            ];
-        } else {
-            return badRequest(204, 'No WhatsApp transactions found');
-        }
-    }
+    private function getTransactions($filters){
 
-    private function getSmsTransactions($filters){
-        $query = "SELECT *, 'sms' as transaction_type FROM {$this->smsTransactionsTable}";
+        $allQuery = "SELECT * FROM {$this->transactionsTable}";
         $whereConditions = $this->buildWhereConditions($filters);
         
         if (!empty($whereConditions)) {
-            $query .= " WHERE " . implode(" AND ", $whereConditions);
+            $allQuery .= " WHERE " . implode(" AND ", $whereConditions);
         }
         
-        $query .= " ORDER BY id DESC LIMIT {$filters['limit']} OFFSET {$filters['offset']}";
-        
-        $result = $this->query($query);
-        
-        if ($result) {
-            return [
-                'status' => true,
-                'code' => 200,
-                'message' => 'SMS transactions retrieved successfully',
-                'data' => $result,
-                'type' => 'sms'
-            ];
-        } else {
-            return badRequest(204, 'No SMS transactions found');
-        }
-    }
-
-    private function getCombinedTransactions($filters){
-        // Get WhatsApp transactions
-        $whatsappQuery = "SELECT *, 'whatsapp' as transaction_type FROM {$this->whatsappTransactionsTable}";
-        $whereConditions = $this->buildWhereConditions($filters);
-        
-        if (!empty($whereConditions)) {
-            $whatsappQuery .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-        
-        // Get SMS transactions
-        $smsQuery = "SELECT *, 'sms' as transaction_type FROM {$this->smsTransactionsTable}";
-        
-        if (!empty($whereConditions)) {
-            $smsQuery .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-        
-        // Combine queries with UNION and apply ordering and limit
-        $combinedQuery = "({$whatsappQuery}) UNION ALL ({$smsQuery}) ORDER BY id DESC LIMIT {$filters['limit']} OFFSET {$filters['offset']}";
+        $combinedQuery = "({$allQuery}) ORDER BY id DESC LIMIT {$filters['limit']} OFFSET {$filters['offset']}";
         
         $result = $this->query($combinedQuery);
         
@@ -138,7 +227,7 @@ class Transactions extends dbFunctions {
                 'code' => 200,
                 'message' => 'Combined transactions retrieved successfully',
                 'data' => $result,
-                'type' => 'combined'
+                'type' => 'all'
             ];
         } else {
             return badRequest(204, 'No transactions found');
@@ -169,58 +258,5 @@ class Transactions extends dbFunctions {
         }
         
         return $conditions;
-    }
-
-    public function getTransactionStats($email){
-        $email = $this->escape($email);
-        $user = $this->find($this->usersTable, "email = '$email'");
-        
-        if (!$user) {
-            return badRequest(400, 'User not found');
-        }
-
-        $isSuperAdmin = $this->rolesAndPermissions->hasRole($user['id'], "SUPERADMIN");
-        if(!$isSuperAdmin){
-            return badRequest(403, "You do not have access to this feature");
-        }
-
-        // Get WhatsApp stats
-        $whatsappStats = $this->query("
-            SELECT 
-                COUNT(*) as total_count,
-                COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed_count,
-                COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_count,
-                COUNT(CASE WHEN status = 'FAILED' THEN 1 END) as failed_count,
-                SUM(CASE WHEN status = 'COMPLETED' THEN amount ELSE 0 END) as total_amount
-            FROM {$this->whatsappTransactionsTable}
-        ");
-
-        // Get SMS stats
-        $smsStats = $this->query("
-            SELECT 
-                COUNT(*) as total_count,
-                COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed_count,
-                COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_count,
-                COUNT(CASE WHEN status = 'FAILED' THEN 1 END) as failed_count,
-                SUM(CASE WHEN status = 'COMPLETED' THEN amount ELSE 0 END) as total_amount
-            FROM {$this->smsTransactionsTable}
-        ");
-
-        return [
-            'status' => true,
-            'code' => 200,
-            'message' => 'Transaction statistics retrieved successfully',
-            'data' => [
-                'whatsapp' => $whatsappStats[0] ?? null,
-                'sms' => $smsStats[0] ?? null,
-                'combined' => [
-                    'total_count' => ($whatsappStats[0]['total_count'] ?? 0) + ($smsStats[0]['total_count'] ?? 0),
-                    'completed_count' => ($whatsappStats[0]['completed_count'] ?? 0) + ($smsStats[0]['completed_count'] ?? 0),
-                    'pending_count' => ($whatsappStats[0]['pending_count'] ?? 0) + ($smsStats[0]['pending_count'] ?? 0),
-                    'failed_count' => ($whatsappStats[0]['failed_count'] ?? 0) + ($smsStats[0]['failed_count'] ?? 0),
-                    'total_amount' => ($whatsappStats[0]['total_amount'] ?? 0) + ($smsStats[0]['total_amount'] ?? 0)
-                ]
-            ]
-        ];
     }
 }

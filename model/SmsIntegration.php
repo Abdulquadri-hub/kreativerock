@@ -97,7 +97,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
+        $totalPurchasedUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         if(!$totalPurchasedUnits){
             return 0;
         }
@@ -113,7 +113,7 @@ class SmsIntegration {
             exit;
         }
         
-        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
+        $unit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         if(!$unit){
             return 0;
         }
@@ -134,7 +134,7 @@ class SmsIntegration {
             exit;
         }
         
-        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
+        $totalSpentUnits = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         if(!$totalSpentUnits){
             return 0;
         }
@@ -158,7 +158,7 @@ class SmsIntegration {
         $totalUsed = $this->getTotalSpentUnitsQty($email) + $unitsToDeduct;
         $newBalance = $currentBalance - $unitsToDeduct;
 
-        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}' AND type = 'sms'");
+        $userUnit = $this->db->find($this->userUnitsTable, "user_id = '{$user['id']}'");
         if (empty($userUnit)) {
             return false;
         }
@@ -166,7 +166,7 @@ class SmsIntegration {
         $this->db->update($this->userUnitsTable, [
             "total_used_qty" => $totalUsed,
             "total_unit_balance" => $newBalance
-        ], "user_id = '{$user['id']}' AND type = 'sms'");
+        ], "user_id = '{$user['id']}'");
     
         return true;
     }
@@ -258,7 +258,6 @@ class SmsIntegration {
             }
         }
     }
-
     
     /** Whatsapp Ends */
 
@@ -273,9 +272,9 @@ class SmsIntegration {
             "status" => true,
             "code" => 200,
             "unit_balance" => $this->getTotalUnitsBalance($email),
-            "whatsappunit_balance" => $this->getWhatsappTotalUnitsBalance($email),
+            // "whatsappunit_balance" => $this->getWhatsappTotalUnitsBalance($email),
             "unit_spent" => $this->getTotalSpentUnitsQty($email),
-            "whatsappunit_spent" => $this->getWhatsappTotalSpentUnitsQty($email)
+            // "whatsappunit_spent" => $this->getWhatsappTotalSpentUnitsQty($email)
         ];
     }
     

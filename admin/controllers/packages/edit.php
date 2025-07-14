@@ -11,7 +11,7 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsPackage = new SmsPackage();
+$package = new Package();
 
 
 $email = $_SESSION["elfuseremail"] ??  null;
@@ -26,10 +26,10 @@ if($res)
         exit("BAD REQUEST");
     }
 
-    if($smsPackage->checkIfSmsPackageExists("id = '$id'"))
+    if($package->checkIfPackageExists("id = '$id'"))
     {
         
-        $row = $smsPackage->getSmsPackageInfo("id = '$id'");
+        $row = $package->getPackageInfo("id = '$id'");
 
         if(!empty($row))
         {
@@ -41,10 +41,10 @@ if($res)
                         status =  '" . $status . "'
                       " ;
 	        
-	        $result = $smsPackage->updateSmsPackageDetails($query, $id);
+	        $result = $package->updatePackageDetails($query, $id);
 	        if($result)
             {
-                $updatedRow = $smsPackage->getSmsPackageInfo("id = '$id'");
+                $updatedRow = $package->getPackageInfo("id = '$id'");
                 echo  success($result,200, "Successful",$updatedRow);
         
             }else {

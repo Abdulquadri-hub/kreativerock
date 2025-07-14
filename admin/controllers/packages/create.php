@@ -11,8 +11,7 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsPackage = new SmsPackage();
-$whatsPackage = new WhatsAppPackage();
+$package = new Package();
 
 $email = $_SESSION["elfuseremail"] ??  null;
 $res = $user->getUserInfo("email = '" . $email . "'");
@@ -38,9 +37,9 @@ if($res){
 	            '" . $user . "'
 	          ";
     
-    $result = $smsPackage->registerSmsPackage($fields, $values);
+    $result = $package->registerPackage($fields, $values);
     if($result){
-        $savedData = $whatsPackage->getWhatsAppPackageInfo("packagename = '$packagename'");
+        $savedData = $package->getPackageInfo("packagename = '$packagename'");
         echo  success($savedData,200, "Successful");
     }else {
         echo badRequest(204, "Registration not successful");

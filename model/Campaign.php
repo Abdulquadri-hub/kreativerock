@@ -346,7 +346,7 @@ class Campaign {
         $phoneNumbers = $campaignExists['phone_numbers'];
         $requiredUnits = count((array)$phoneNumbers);
         if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
-             return ['status' => false, 'code' => 442, 'message' => 'Insufficient SMS units. Please recharge your account'];
+             return ['status' => false, 'code' => 442, 'message' => 'Insufficient units. Please kindly puchase a unit'];
              exit;
         }
 
@@ -473,14 +473,14 @@ class Campaign {
         // }        
 
         if ($campaign['channel'] === 'whatsapp') {
-            if (!$this->smsIntegration->deductWhatsappUnits($email, $requiredUnits)) {
+            if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
                 return ['status' => false, 'message' => 'Insufficient whatsapp units'];
             }
             return $this->whatsAppCampaign($campaign, $phoneNumbers);
         } else {
 
             if (!$this->smsIntegration->deductUnits($email, $requiredUnits)) {
-                return ['status' => false, 'message' => 'Insufficient sms units'];
+                return ['status' => false, 'message' => 'Insufficient units'];
             }
 
             return $this->sMsCampaign($campaign, $phoneNumbers);

@@ -10,27 +10,24 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
     exit(badRequest(204,'Invalid session data. Proceed to login'));
 }
 
-$whatsPackage = new WhatsAppPackage();
+
+$package = new Package();
 
 $packageId = isset($_REQUEST['id']) && $_REQUEST['id'] !== ""  ?  $_REQUEST['id'] :  "";
 $startDate = isset($_POST['start_date']) && $_POST['start_date'] !== "" ?  $_POST['start_date'] :  "";
 $endDate = isset($_POST['end_date']) && $_POST['end_date'] !== "" ?  $_POST['end_date'] :  date("Y-m-d H:i:s");
 
-if(!empty($packageId))
-{
-    if(!empty($startDate))
-    {
-        $result =  $whatsPackage->retrieveByQuerySelector("SELECT * FROM whatsapp_packages WHERE id = $packageId AND WHERE created_at BETWEEN $startDate AND $endDate ORDER BY id DESC");
+if(!empty($packageId)){
+
+    if(!empty($startDate)){
+        $result =  $package->retrieveByQuerySelector("SELECT * FROM packages WHERE id = $packageId AND WHERE created_at BETWEEN $startDate AND $endDate ORDER BY id DESC");
     }else {
-        
-        $result = $whatsPackage->retrieveByQuerySelector("SELECT * FROM whatsapp_packages WHERE id = $packageId ORDER BY id DESC");
+        $result = $package->retrieveByQuerySelector("SELECT * FROM packages WHERE id = $packageId ORDER BY id DESC");
     }
     
-    if($result)
-    {
+    if($result){
         echo  success($result,200, "Successful","Successful");
     }else {
-        
         echo badRequest(204,'No Package Found!');
     }
     
@@ -39,10 +36,10 @@ if(!empty($packageId))
     if(!empty($startDate))
     {
         
-        $result =  $whatsPackage->retrieveByQuerySelector("SELECT * FROM whatsapp_packages WHERE created_at BETWEEN $startDate AND $endDate ORDER BY id DESC");
+        $result =  $package->retrieveByQuerySelector("SELECT * FROM packages WHERE created_at BETWEEN $startDate AND $endDate ORDER BY id DESC");
     }else {
         
-        $result = $whatsPackage->retrieveByQuerySelector("SELECT * FROM whatsapp_packages ORDER BY id DESC");
+        $result = $package->retrieveByQuerySelector("SELECT * FROM packages ORDER BY id DESC");
     }
     
     

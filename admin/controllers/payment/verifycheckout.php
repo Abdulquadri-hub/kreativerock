@@ -11,9 +11,9 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsPackage = new SmsPackage();
-$smsPurchase = new SmsPurchase();
-$smsTransaction = new SmsTransaction();
+$package = new Package();
+$purchase = new Purchase();
+$transaction = new Transactions();
 $admin = new Administration();
 
 
@@ -39,26 +39,26 @@ if($status === "failed")
     
 }else{
     
-    $response = $smsTransaction->verifyPayment($transaction_id,$skey);
+    $response = $transaction->verifyPayment($transaction_id,$skey);
     
     $datarow = json_decode($response,true);
     if($datarow["status"] === "success")
     {
         if($datarow["data"]["status"] === "successful")
         {
-            $purchasedPackages = $admin->executeByQuerySelector("SELECT * FROM sms_purchases WHERE transactionref = '$reference'");
+            $purchasedPackages = $admin->executeByQuerySelector("SELECT * FROM purchases WHERE transactionref = '$reference'");
             if($purchasedPackages)
             {
                 foreach($purchasedPackages as $purchasedPackage)
                 {
-                    // $smsPackagePurchasedUpdate = $admin->executeByQuerySelector("UPDATE sms_purchases SET status = 'Active' WHERE id = " . $purchasedPackage["id"]);
-                    $smsTransactionUpdate = $admin->executeByQuerySelector("
-                                                    UPDATE sms_transactions SET status = 'COMPLETED' 
+                    // $packagePurchasedUpdate = $admin->executeByQuerySelector("UPDATE purchases SET status = 'Active' WHERE id = " . $purchasedPackage["id"]);
+                    $transactionUpdate = $admin->executeByQuerySelector("
+                                                    UPDATE transactions SET status = 'COMPLETED' 
                                                     WHERE packageid = " . $purchasedPackage["packageid"] . " 
                                                     AND reference = " .$purchasedPackage['transactionref']." ");
                 }
                
-                $smsTransaction->createOrUpdateUserSMSUnits($reference, $email);
+                $transaction->createOrUpdateUserUnits($reference, $email);
             }
             
             $flutterResponse = json_encode($datarow["data"]);

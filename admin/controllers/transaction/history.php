@@ -45,12 +45,11 @@ try {
 }
 
 function handleGetTransactions($transactions, $userEmail) {
-    // Collect all request parameters
+ 
     $request = array_merge($_GET, $_POST);
     
-    // Validate required parameters and set defaults
     $filters = [
-        'type' => validateTransactionType($request['type'] ?? 'both'),
+        'type' => validateTransactionType($request['type'] ?? 'all'),
         'status' => trim($request['status'] ?? ''),
         'reference' => trim($request['reference'] ?? ''),
         'user' => trim($request['user'] ?? ''),
@@ -60,7 +59,6 @@ function handleGetTransactions($transactions, $userEmail) {
         'offset' => validateOffset($request['offset'] ?? 0)
     ];
     
-    // Log the request for debugging (remove in production)
     error_log("Super Admin Transaction Request - User: $userEmail, Filters: " . json_encode($filters));
     
     $result = $transactions->getAllTransactions($filters, $userEmail);

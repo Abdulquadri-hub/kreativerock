@@ -475,15 +475,10 @@ class User{
             $userData['roles'] = $roles;
             $userData['permissions'] = $permissions;
     
-            // Fetch SMS transactions by email
-            $smsSql = "SELECT * FROM sms_transactions WHERE user = ?";
-            $smsTransactions = $this->db->query($smsSql, [$userData['email']]);
+            $smsSql = "SELECT * FROM transactions WHERE user = ?";
+            $transactions = $this->db->query($smsSql, [$userData['email']]);
     
-            $whatsappSql = "SELECT * FROM whatsapp_transactions WHERE user = ?";
-            $whatsappTransactions = $this->db->query($whatsappSql, [$userData['email']]);
-    
-            $userData['sms_transactions'] = $smsTransactions ?: [];
-            $userData['whatsapp_transactions'] = $whatsappTransactions ?: [];
+            $userData['transactions'] = $transactions ?: [];
         }
     
         return $userData;

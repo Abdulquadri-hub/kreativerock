@@ -11,7 +11,7 @@ if (isset($_SESSION['elfuseremail']) && $_SESSION['elfuseremail'] === null || !i
 }
 
 $user = new User();
-$smsTransaction = new SmsTransaction();
+$transaction = new Transactions();
 
 $user = $_SESSION["elfuseremail"] ??  null;
 $transactionReference = isset($_REQUEST['reference']) && $_REQUEST['reference'] !== ""  ?  $_REQUEST['reference'] :  "";
@@ -21,12 +21,10 @@ $endDate = isset($_POST['end_date']) && $_POST['end_date'] !== "" ?  $_POST['end
 
 if(!empty($user))
 {
-    //
-    
     if(!empty($startDate)){
-        $resultByUser =  $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE user = '" . $user . "' AND WHERE created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED'ORDER BY id DESC");
+        $resultByUser =  $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE user = '" . $user . "' AND WHERE created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED'ORDER BY id DESC");
     }else {
-        $resultByUser = $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE user = '" . $user . "' AND status = 'COMPLETED' ORDER BY id DESC");
+        $resultByUser = $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE user = '" . $user . "' AND status = 'COMPLETED' ORDER BY id DESC");
     }
     
     if($resultByUser){
@@ -45,9 +43,9 @@ if(!empty($user))
     
         
     if(!empty($startDate)){
-        $resultByTransactionReference =  $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE reference = '" . $transactionReference . "'  AND created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED' ORDER BY id DESC");
+        $resultByTransactionReference =  $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE reference = '" . $transactionReference . "'  AND created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED' ORDER BY id DESC");
     }else {
-        $resultByTransactionReference = $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE reference = '" . $transactionReference . "' AND status = 'COMPLETED'  ORDER BY id DESC");
+        $resultByTransactionReference = $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE reference = '" . $transactionReference . "' AND status = 'COMPLETED'  ORDER BY id DESC");
     }
     
     
@@ -67,9 +65,9 @@ if(!empty($user))
     
         
     if(!empty($startDate)){
-        $resultByStatus =  $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE status = '" . $status . "'  \AND created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED' ORDER BY id DESC");
+        $resultByStatus =  $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE status = '" . $status . "'  \AND created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED' ORDER BY id DESC");
     }else {
-        $resultByStatus = $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE status = '" . $status . "'  ORDER BY id DESC");
+        $resultByStatus = $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE status = '" . $status . "'  ORDER BY id DESC");
     }
     
     
@@ -89,9 +87,9 @@ if(!empty($user))
 }else {
     
     if(!empty($startDate)){
-        $result =  $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions WHERE created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED'ORDER BY id DESC");
+        $result =  $transaction->retrieveByQuerySelector("SELECT * FROM transactions WHERE created_at BETWEEN $startDate AND $endDate AND status = 'COMPLETED'ORDER BY id DESC");
     }else {
-        $result = $smsTransaction->retrieveByQuerySelector("SELECT * FROM sms_transactions ORDER BY id DESC");
+        $result = $transaction->retrieveByQuerySelector("SELECT * FROM transactions ORDER BY id DESC");
     }
     
     

@@ -11,7 +11,7 @@ if ($_SESSION['elfuseremail'] === null || !isset($_SESSION['elfuseremail'])) {
 }
 
 $user = new User();
-$smsPackage = new SmsPackage();
+$package = new Package();
 
 $email = $_SESSION["elfuseremail"] ?? null;
 $res = $user->getUserInfo("email = '" . $email . "'");
@@ -23,9 +23,9 @@ if($res){
         exit(badRequest(400, "id is required"));
     }
 
-    if($smsPackage->checkIfSmsPackageExists("id = '" . $id . "'")){
+    if($package->checkIfPackageExists("id = '" . $id . "'")){
         
-        $result = $smsPackage->removeSmsPackage("id = '" . $id . "'");
+        $result = $package->removePackage("id = '" . $id . "'");
 
         if($result){
             echo  success($result,200, "Successful","Successful");
